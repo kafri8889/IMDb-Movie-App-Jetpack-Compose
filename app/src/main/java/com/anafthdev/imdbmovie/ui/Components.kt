@@ -1,8 +1,38 @@
 package com.anafthdev.imdbmovie.ui
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.ExperimentalUnitApi
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.TextUnitType
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import com.anafthdev.imdbmovie.R
+import com.anafthdev.imdbmovie.data.NavigationDrawerItem
 import com.anafthdev.imdbmovie.model.movie.*
+import com.anafthdev.imdbmovie.ui.theme.default_dark_primary
+import com.anafthdev.imdbmovie.ui.theme.default_primary
+import com.anafthdev.imdbmovie.utils.AppUtils.lessThan
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 
 @Composable
 fun MovieView(movie: Movie) {
@@ -233,4 +263,85 @@ fun MovieViewPreview() {
 	)
 	
 	MovieView(movie = movie)
+}
+
+@OptIn(ExperimentalUnitApi::class, ExperimentalMaterialApi::class)
+@Composable
+fun DrawerItem(item: NavigationDrawerItem, isSelected: Boolean = false, onClick: () -> Unit) {
+	val backgroundColor = if (isSelected) default_primary.copy(alpha = 0.1f) else Color.Transparent
+	
+	Card(
+		onClick = onClick,
+		backgroundColor = backgroundColor,
+		shape = RoundedCornerShape(8.dp),
+		elevation = 0.dp
+	) {
+		Row(
+			verticalAlignment = Alignment.CenterVertically,
+			modifier = Modifier
+				
+				.fillMaxWidth()
+				.padding(8.dp)
+		) {
+			Image(
+				painter = painterResource(id = item.icon),
+				contentDescription = null,
+				modifier = Modifier
+					.size(10.dp)
+			)
+			
+			Text(
+				text = item.title,
+				fontWeight = FontWeight.Bold,
+				fontSize = TextUnit(16f, TextUnitType.Sp),
+				modifier = Modifier
+					.padding(start = 8.dp)
+			)
+		}
+	}
+}
+
+@Preview(showBackground = true)
+@Composable
+fun DrawerItemPreview() {
+	DrawerItem(item = NavigationDrawerItem.MostPopularMovies, true) {}
+}
+
+@Composable
+fun Drawer(scope: CoroutineScope, scaffoldState: ScaffoldState, navigationController: NavController) {
+	val navigationBackStackEntry by navigationController.currentBackStackEntryAsState()
+	val currentRoute = navigationBackStackEntry?.destination?.route
+	
+	Column(modifier = Modifier
+		.padding(4.dp)
+		.fillMaxHeight()
+	) {
+		LazyColumn {
+			items(NavigationDrawerItem.items) { item ->
+				DrawerItem(item = item, isSelected = currentRoute == item.destination) {
+					navigationController.navigate(item.destination) {
+						navigationController.graph.startDestinationRoute?.let { destination ->
+							popUpTo(destination) {
+								saveState = true
+							}
+							
+							launchSingleTop = true
+							restoreState = true
+						}
+					}
+					
+					scope.launch { scaffoldState.drawerState.close() }
+				}
+			}
+		}
+	}
+}
+
+@Preview(showSystemUi = true)
+@Composable
+fun DrawerPreview() {
+	val scope = rememberCoroutineScope()
+	val scaffoldState = rememberScaffoldState(rememberDrawerState(initialValue = DrawerValue.Closed))
+	val navController = rememberNavController()
+	Drawer(scope, scaffoldState, navController)
 }
