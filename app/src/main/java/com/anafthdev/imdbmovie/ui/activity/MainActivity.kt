@@ -31,6 +31,7 @@ import com.anafthdev.imdbmovie.ui.theme.IMDbMovieTheme
 import com.anafthdev.imdbmovie.ui.theme.default_primary
 import com.anafthdev.imdbmovie.utils.AppDatastore
 import com.anafthdev.imdbmovie.utils.DatabaseUtils
+import com.anafthdev.imdbmovie.view_model.MovieViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -38,6 +39,7 @@ class MainActivity : ComponentActivity() {
 	
 	@Inject lateinit var appDatastore: AppDatastore
 	@Inject lateinit var databaseUtils: DatabaseUtils
+	@Inject lateinit var viewModel: MovieViewModel
 	
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
@@ -50,30 +52,11 @@ class MainActivity : ComponentActivity() {
 	}
 	
 	@Composable
-	fun Navigation(controller: NavHostController) {
-		NavHost(
-			navController = controller,
-			startDestination = NavigationDestination.MOST_POPULAR_MOVIE_SCREEN
-		) {
-			composable(NavigationDestination.MOST_POPULAR_MOVIE_SCREEN) {
-				MostPopularMovieScreen()
-			}
-			
-			composable(NavigationDestination.BOX_OFFICE_MOVIE_SCREEN) {
-				BoxOfficeMovieScreen()
-			}
-			
-			composable(NavigationDestination.TOP_250_MOVIE_SCREEN) {
-				Top250MovieScreen()
-			}
-		}
-	}
-	
-	@Composable
 	fun MainActivityScreen() {
 		val scope = rememberCoroutineScope()
 		val scaffoldState = rememberScaffoldState(rememberDrawerState(initialValue = DrawerValue.Closed))
 		val navController = rememberNavController()
+		
 		Scaffold(
 			scaffoldState = scaffoldState,
 			drawerBackgroundColor = Color.White,
@@ -104,7 +87,26 @@ class MainActivity : ComponentActivity() {
 				Drawer(scope = scope, scaffoldState = scaffoldState, navigationController = navController)
 			}
 		) {
-			Navigation(controller = navController)
+			NavHost(
+				navController = navController,
+				startDestination = NavigationDestination.MOST_POPULAR_MOVIE_SCREEN
+			) {
+				composable(NavigationDestination.MOST_POPULAR_MOVIE_SCREEN) {
+					MostPopularMovieScreen(viewModel)
+				}
+				
+				composable(NavigationDestination.BOX_OFFICE_MOVIE_SCREEN) {
+					BoxOfficeMovieScreen()
+				}
+				
+				composable(NavigationDestination.TOP_250_MOVIE_SCREEN) {
+					Top250MovieScreen()
+				}
+				
+				composable(NavigationDestination.SETTINGS_SCREEN) {
+					SettingsScreen()
+				}
+			}
 		}
 	}
 	

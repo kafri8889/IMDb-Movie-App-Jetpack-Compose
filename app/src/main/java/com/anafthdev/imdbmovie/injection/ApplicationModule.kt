@@ -1,7 +1,11 @@
 package com.anafthdev.imdbmovie.injection
 
+import com.anafthdev.imdbmovie.data.LocalDataSource
+import com.anafthdev.imdbmovie.data.RemoteDataSource
+import com.anafthdev.imdbmovie.data.Repository
 import com.anafthdev.imdbmovie.utils.AppDatastore
 import com.anafthdev.imdbmovie.utils.DatabaseUtils
+import com.anafthdev.imdbmovie.view_model.MovieViewModel
 import dagger.Module
 import dagger.Provides
 import javax.inject.Singleton
@@ -20,4 +24,13 @@ class ApplicationModule(private val application: Application) {
 	@Provides
 	@Singleton
 	fun providesDatabaseUtils() = DatabaseUtils(application)
+	
+	@Provides
+	@Singleton
+	fun providesViewModel() = MovieViewModel(
+		Repository(
+			LocalDataSource(providesDatabaseUtils()),
+			RemoteDataSource()
+		)
+	)
 }

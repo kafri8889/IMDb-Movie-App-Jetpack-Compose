@@ -1,7 +1,10 @@
 package com.anafthdev.notepadcompose.utils
 
+import android.annotation.SuppressLint
 import androidx.activity.ComponentActivity
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.*
@@ -9,6 +12,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -116,6 +123,43 @@ object ComposeUtils {
 				}
 			}
 		}
+	}
+	
+	object Shimmer {
+		
+		const val START = "start_shimmer"
+		const val STOP = "stop_shimmer"
+		
+		@SuppressLint("UnnecessaryComposedModifier")
+		fun Modifier.applyShimmer(
+			state: String,
+			durationInMillis: Int = 1000
+		) = composed { then(
+			run {
+				val transition = rememberInfiniteTransition()
+				val translateAnim by transition.animateFloat(
+					initialValue = 0f,
+					targetValue = 2000f,
+					animationSpec = infiniteRepeatable(
+						tween(durationMillis = durationInMillis, easing = FastOutSlowInEasing),
+						RepeatMode.Reverse
+					)
+				)
+				
+				val brush = Brush.linearGradient(
+					colors = listOf(
+						Color.LightGray.copy(0.9f),
+						Color.LightGray.copy(0.2f),
+						Color.LightGray.copy(0.9f)
+					),
+					start = Offset(10f, 10f),
+					end = Offset(translateAnim, translateAnim)
+				)
+				
+				if (state == START) background(brush) else background(color = Color.Transparent)
+			}
+		) }
+		
 	}
 	
 	@Composable

@@ -6,7 +6,7 @@ import com.anafthdev.imdbmovie.R
 sealed class NavigationDrawerItem(
 	val destination: String,
 	val title: String,
-	@DrawableRes val icon: Int
+	@DrawableRes val icon: Int? = null
 ) {
 	object MostPopularMovies: NavigationDrawerItem(
 		NavigationDestination.MOST_POPULAR_MOVIE_SCREEN,
@@ -26,11 +26,17 @@ sealed class NavigationDrawerItem(
 		R.drawable.ic_dot
 	)
 	
+	object Settings: NavigationDrawerItem(
+		NavigationDestination.SETTINGS_SCREEN,
+		"Settings"
+	)
+	
 	companion object {
 		val items = listOf(
 			MostPopularMovies,
 			BoxOfficeMovie,
-			Top250Movie
+			Top250Movie,
+			Settings
 		)
 	}
 }

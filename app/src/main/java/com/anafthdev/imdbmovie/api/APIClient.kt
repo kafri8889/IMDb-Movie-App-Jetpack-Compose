@@ -2,7 +2,6 @@ package com.anafthdev.imdbmovie.api
 
 import com.anafthdev.imdbmovie.model.most_popular_movie.MostPopularMovieResponse
 import com.anafthdev.imdbmovie.model.movie.Movie
-import com.anafthdev.imdbmovie.model.rating.RatingResponse
 import com.anafthdev.imdbmovie.model.search_movie.SearchMovieResponse
 import retrofit2.Call
 import retrofit2.http.GET
@@ -25,12 +24,6 @@ interface APIClient {
 	fun getBoxOffice(
 		@Path("apiKey") apiKey: String
 	): Call<MostPopularMovieResponse>
-	
-	@GET("/en/API/UserRatings/{apiKey}/{movieID}/")
-	fun getRating(
-		@Path("apiKey") apiKey: String,
-		@Path("movieID") movieID: String
-	): Call<RatingResponse>
 	
 	@GET("/en/API/SearchMovie/{apiKey}/{query}/")
 	fun searchMovie(

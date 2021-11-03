@@ -1,4 +1,4 @@
-package com.anafthdev.imdbmovie.database
+package com.anafthdev.imdbmovie.database.movie
 
 import androidx.room.*
 import com.anafthdev.imdbmovie.model.movie.Movie
@@ -8,6 +8,9 @@ interface MovieDAO {
 	
 	@Query("SELECT * FROM movie_table")
 	suspend fun getAll(): List<Movie>
+	
+	@Query("DELETE FROM movie_table")
+	suspend fun deleteAll()
 	
 	@Query("SELECT EXISTS (SELECT 1 FROM movie_table WHERE id LIKE :mID)")
 	suspend fun isExists(mID: String): Boolean
