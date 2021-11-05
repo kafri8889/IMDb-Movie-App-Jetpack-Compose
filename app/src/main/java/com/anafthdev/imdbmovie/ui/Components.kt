@@ -212,14 +212,14 @@ fun MostPopularMovieItem(
 			Row(
 				verticalAlignment = Alignment.CenterVertically,
 				modifier = Modifier
-					.padding(top = 8.dp, bottom = 8.dp)
+					.padding(top = 8.dp, bottom = 8.dp, start = 8.dp, end = 8.dp)
 			) {
 				Text(
 					text = item.fullTitle,
 					fontWeight = FontWeight.Bold,
 					fontSize = TextUnit(18f, TextUnitType.Sp),
 					modifier = Modifier
-						.padding(start = 8.dp, end = 8.dp)
+						.padding(end = 8.dp)
 						.weight(1f)
 						.wrapContentWidth(Alignment.Start)
 				)
@@ -231,31 +231,34 @@ fun MostPopularMovieItem(
 					verticalAlignment = Alignment.CenterVertically
 				) {
 					Image(
-						painter = painterResource(id = R.drawable.ic_star_24),
+						painter = painterResource(id = com.anafthdev.imdbmovie.R.drawable.ic_star_24),
 						contentDescription = null,
 						modifier = Modifier.size(28.dp)
 					)
 					Column {
 						Text(
 							text = buildAnnotatedString {
-								withStyle(SpanStyle(
-									color = text_color,
-									fontWeight = FontWeight.ExtraBold,
-									fontSize = TextUnit(14f, TextUnitType.Sp),
-								)) {
+								withStyle(
+									SpanStyle(
+										color = text_color,
+										fontWeight = FontWeight.ExtraBold,
+										fontSize = TextUnit(14f, TextUnitType.Sp),
+									)
+								) {
 									append(item.imDbRating)
 								}
 								
-								withStyle(SpanStyle(
-									color = text_color,
-									fontWeight = FontWeight.Light,
-									fontSize = TextUnit(12f, TextUnitType.Sp),
-								)) {
+								withStyle(
+									SpanStyle(
+										color = text_color,
+										fontWeight = FontWeight.Light,
+										fontSize = TextUnit(12f, TextUnitType.Sp),
+									)
+								) {
 									append("/10")
 								}
 							},
-							modifier = Modifier
-								.padding(end = 8.dp)
+							modifier = Modifier.align(Alignment.CenterHorizontally)
 						)
 						
 						Text(
@@ -263,8 +266,6 @@ fun MostPopularMovieItem(
 							color = text_color,
 							fontWeight = FontWeight.Normal,
 							fontSize = TextUnit(12f, TextUnitType.Sp),
-							modifier = Modifier
-								.padding(end = 8.dp)
 						)
 					}
 				}

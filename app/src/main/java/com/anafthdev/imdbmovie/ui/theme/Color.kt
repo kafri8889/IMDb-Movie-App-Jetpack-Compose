@@ -4,6 +4,9 @@ import androidx.compose.ui.graphics.Color
 
 val text_color = Color(0xFF808080)
 
+val pure_black = Color(0xFF000000)
+val black = Color(0xFF222222)
+
 val success_color = Color(0xFF00cb51)
 val failed_color = Color(0xFFff4444)
 val info_color = Color(0xFF33b5e5)
