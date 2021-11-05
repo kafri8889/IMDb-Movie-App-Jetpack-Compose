@@ -84,23 +84,45 @@ class MainActivity : ComponentActivity() {
 				)
 			},
 			drawerContent = {
-				Drawer(scope = scope, scaffoldState = scaffoldState, navigationController = navController)
+				Drawer(scope = scope, scaffoldState = scaffoldState, navHostController = navController)
 			}
 		) {
 			NavHost(
 				navController = navController,
 				startDestination = NavigationDestination.MOST_POPULAR_MOVIE_SCREEN
 			) {
+				composable(
+					route = "${NavigationDestination.MOVIE_INFORMATION_SCREEN}/{movieID}",
+					arguments = listOf(
+						navArgument("movieID") {
+							type = NavType.StringType
+						}
+					)
+				) { entry ->
+					val movieID = entry.arguments?.getString("movieID")
+					MovieInformationScreen(
+						navigationController = navController,
+						movieID = movieID ?: ""
+					)
+				}
+				
 				composable(NavigationDestination.MOST_POPULAR_MOVIE_SCREEN) {
-					MostPopularMovieScreen(viewModel)
+					MostPopularMovieScreen(
+						navController,
+						viewModel
+					)
 				}
 				
 				composable(NavigationDestination.BOX_OFFICE_MOVIE_SCREEN) {
-					BoxOfficeMovieScreen()
+					BoxOfficeMovieScreen(
+						navController
+					)
 				}
 				
 				composable(NavigationDestination.TOP_250_MOVIE_SCREEN) {
-					Top250MovieScreen()
+					Top250MovieScreen(
+						navController
+					)
 				}
 				
 				composable(NavigationDestination.SETTINGS_SCREEN) {
@@ -138,7 +160,7 @@ class MainActivity : ComponentActivity() {
 				)
 			},
 			drawerContent = {
-				Drawer(scope = scope, scaffoldState = scaffoldState, navigationController = navController)
+				Drawer(scope = scope, scaffoldState = scaffoldState, navHostController = navController)
 			}
 		) {
 		

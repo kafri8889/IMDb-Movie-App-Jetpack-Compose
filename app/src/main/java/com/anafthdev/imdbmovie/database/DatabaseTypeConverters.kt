@@ -72,4 +72,21 @@ object DatabaseTypeConverters {
 	@TypeConverter
 	fun languageFromJSON(languageJSON: String) = Gson().fromJson(languageJSON, Array<Language>::class.java).toList()
 	
+	@TypeConverter
+	fun postersToJSON(posters: Posters) = Gson().toJson(posters)!!
+	
+	@TypeConverter
+	fun postersFromJSON(postersJSON: String) = Gson().fromJson(postersJSON, Posters::class.java)!!
+	
+	@TypeConverter
+	fun posterToJSON(posters: List<Poster>) = Gson().toJson(posters)!!
+	
+	@TypeConverter
+	fun posterFromJSON(posterJSON: String) = Gson().fromJson(posterJSON, Array<Poster>::class.java).toList()
+	
+	@TypeConverter
+	fun backdropToJSON(backdrops: List<Backdrop>) = Gson().toJson(backdrops)!!
+	
+	@TypeConverter
+	fun backdropFromJSON(backdropsJSON: String) = Gson().fromJson(backdropsJSON, Array<Backdrop>::class.java).toList()
 }
