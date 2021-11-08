@@ -2,15 +2,13 @@ package com.anafthdev.imdbmovie.ui
 
 import android.util.Log
 import android.util.Log.i
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
+import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.LocalOverScrollConfiguration
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
@@ -31,6 +29,7 @@ import androidx.compose.ui.unit.ExperimentalUnitApi
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
+import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberImagePainter
@@ -109,7 +108,11 @@ fun BoxOfficeMovieScreen(
 
 }
 
-@OptIn(ExperimentalUnitApi::class, ExperimentalPagerApi::class)
+@OptIn(
+	ExperimentalUnitApi::class,
+	ExperimentalPagerApi::class,
+	ExperimentalFoundationApi::class
+)
 @Composable
 fun MovieInformationScreen(
 	navigationController: NavHostController,
@@ -117,14 +120,13 @@ fun MovieInformationScreen(
 ) {
 	val context = LocalContext.current
 	val scope = rememberCoroutineScope()
-	var pagerState = rememberPagerState()
+	val pagerState = rememberPagerState()
 	var shimmerState by remember { mutableStateOf(ComposeUtils.Shimmer.START) }
 	
 	// TODO: 05/11/2021 get Movie with movieID
 	
 	val movie = Movie.item1
-	val pages = listOf("Overview", "Actors")
-	val selectedPages by remember { mutableStateOf(0) }
+	val pages = listOf("Overview", "Actors", "Posters")
 	
 	Column {
 		Column(
@@ -133,37 +135,64 @@ fun MovieInformationScreen(
 				.verticalScroll(rememberScrollState())
 				.weight(1f, false)
 		) {
-			Image(
-				painter = rememberImagePainter(
-					data = movie.image,
-					builder = {
-						diskCachePolicy(CachePolicy.ENABLED)
-						listener(object : ImageRequest.Listener {
-							override fun onError(request: ImageRequest, throwable: Throwable) {
-								super.onError(request, throwable)
-								throwable.printStackTrace()
-								Log.e("ImageRequest", "error: ${throwable.message}")
-							}
-							
-							override fun onStart(request: ImageRequest) {
-								super.onStart(request)
-								shimmerState = ComposeUtils.Shimmer.START
-							}
-							
-							override fun onSuccess(request: ImageRequest, metadata: ImageResult.Metadata) {
-								super.onSuccess(request, metadata)
-								shimmerState = ComposeUtils.Shimmer.STOP
-							}
-						})
-					}
-				),
-				contentScale = ContentScale.Crop,
-				contentDescription = null,
-				modifier = Modifier
-					.height(512.dp)
-					.fillMaxWidth()
-					.applyShimmer(shimmerState)
-			)
+			ConstraintLayout {
+				val (image, contentRating) = createRefs()
+				
+				Image(
+					painter = rememberImagePainter(
+						data = movie.image,
+						builder = {
+							diskCachePolicy(CachePolicy.ENABLED)
+							listener(object : ImageRequest.Listener {
+								override fun onError(request: ImageRequest, throwable: Throwable) {
+									super.onError(request, throwable)
+									throwable.printStackTrace()
+									Log.e("ImageRequest", "error: ${throwable.message}")
+								}
+								
+								override fun onStart(request: ImageRequest) {
+									super.onStart(request)
+									shimmerState = ComposeUtils.Shimmer.START
+								}
+								
+								override fun onSuccess(request: ImageRequest, metadata: ImageResult.Metadata) {
+									super.onSuccess(request, metadata)
+									shimmerState = ComposeUtils.Shimmer.STOP
+								}
+							})
+						}
+					),
+					contentScale = ContentScale.Crop,
+					contentDescription = null,
+					modifier = Modifier
+						.height(512.dp)
+						.fillMaxWidth()
+						.applyShimmer(shimmerState)
+						.constrainAs(image) {
+							top.linkTo(parent.top)
+							start.linkTo(parent.start)
+							end.linkTo(parent.end)
+						}
+				)
+				
+				Column(
+					verticalArrangement = Arrangement.Center,
+					horizontalAlignment = Alignment.CenterHorizontally,
+					modifier = Modifier
+						.size(72.dp)
+						.padding(16.dp)
+						.clip(RoundedCornerShape(12.dp))
+						.constrainAs(contentRating) {
+							top.linkTo(parent.top)
+							end.linkTo(parent.end)
+						}.background(Color(0xFFF0F0F0))
+				) {
+					Text(
+						text = "${movie.contentRating}+",
+						fontWeight = FontWeight.SemiBold
+					)
+				}
+			}
 			
 			Column {
 				Text(
@@ -178,12 +207,13 @@ fun MovieInformationScreen(
 				Text(
 					text = run {
 						val genres = movie.genres.split(", ".toRegex())
-						"${if (genres.size > 1) "${genres[0]}  |  ${genres[1]}" else genres[0]}  |  ${movie.runtimeStr}  |  ${movie.releaseDate}"
+						"${genres[0]}  |  ${movie.runtimeStr}  |  ${movie.releaseDate}"
 					},
 					fontWeight = FontWeight.Light,
 					fontSize = TextUnit(13f, TextUnitType.Sp),
 					modifier = Modifier
 						.padding(start = 14.dp, end = 8.dp, top = 2.dp, bottom = 8.dp)
+						.fillMaxWidth()
 				)
 				
 				Row(
@@ -356,6 +386,7 @@ fun MovieInformationScreen(
 					when (page) {
 						0 -> OverviewScreen(movie = movie)
 						1 -> ActorScreen(movie = movie)
+						2 -> PosterScreen(movie = movie)
 					}
 					
 					i("pager", "p: ${this.currentPage}")
@@ -420,6 +451,24 @@ fun MovieInformationScreen(
 								.background(Color(0xFFECECEC))
 								.padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 4.dp)
 						)
+					}
+				}
+				
+				Text(
+					text = "Similar",
+					fontWeight = FontWeight.Bold,
+					fontSize = TextUnit(16f, TextUnitType.Sp),
+					modifier = Modifier
+						.padding(start = 14.dp, end = 8.dp, top = 16.dp, bottom = 2.dp)
+				)
+				
+				CompositionLocalProvider(
+					LocalOverScrollConfiguration provides null
+				) {
+					LazyRow {
+						items(movie.similars) {
+							SimilarItem(similar = it)
+						}
 					}
 				}
 			}
@@ -522,28 +571,37 @@ fun ActorScreenPreview() {
 	ActorScreen(movie = Movie.item1)
 }
 
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun PosterScreen(movie: Movie) {
+	LazyVerticalGrid(
+		cells = GridCells.Fixed(2)
+	) {
+		items(movie.posters.posters) {
+			PosterItem(poster = it)
+		}
+		
+		items(movie.posters.backdrops) {
+			BackdropItem(backdrop = it)
+		}
+	}
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PosterScreenPreview() {
+	PosterScreen(Movie.item1)
+}
+
 @OptIn(ExperimentalUnitApi::class)
 @Preview(showBackground = true)
 @Composable
 fun ItemPrev() {
 	val movie = Movie.item1
-	val genres = movie.genres.split(", ".toRegex())
-	Row(
-		modifier = Modifier
-			.wrapContentSize()
-	) {
-		for (genre in genres) {
-			Text(
-				text = genre,
-				color = black,
-				fontWeight = FontWeight.Normal,
-				fontSize = TextUnit(14f, TextUnitType.Sp),
-				modifier = Modifier
-					.padding(4.dp)
-					.clip(RoundedCornerShape(100))
-					.background(Color(0xFFBDBDBD))
-					.padding(4.dp)
-			)
+	
+	LazyRow {
+		items(movie.similars) {
+			SimilarItem(similar = it)
 		}
 	}
 }

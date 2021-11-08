@@ -363,3 +363,145 @@ fun ActorItemPreview() {
 	val actor = Movie.item1.actorList[0]
 	ActorItem(actor = actor)
 }
+
+@OptIn(
+	ExperimentalUnitApi::class,
+	ExperimentalMaterialApi::class,
+)
+@Composable
+fun SimilarItem(similar: Similar) {
+	var shimmerState by remember { mutableStateOf(ComposeUtils.Shimmer.START) }
+	
+	Card(
+		shape = RoundedCornerShape(12.dp),
+		elevation = 4.dp,
+		onClick = {
+			// onclick
+		},
+		modifier = Modifier
+			.padding(8.dp)
+	) {
+		Column {
+			Image(
+				painter = rememberImagePainter(
+					data = similar.image,
+					builder = {
+						listener(object : ImageRequest.Listener {
+							override fun onError(request: ImageRequest, throwable: Throwable) {
+								super.onError(request, throwable)
+								i("ImageRequest", throwable.message!!)
+								throwable.printStackTrace()
+							}
+							
+							override fun onStart(request: ImageRequest) {
+								super.onStart(request)
+								shimmerState = ComposeUtils.Shimmer.START
+							}
+							
+							override fun onSuccess(request: ImageRequest, metadata: ImageResult.Metadata) {
+								super.onSuccess(request, metadata)
+								shimmerState = ComposeUtils.Shimmer.STOP
+							}
+						})
+					}
+				),
+				contentDescription = null,
+				modifier = Modifier
+					.width(172.dp)
+					.height(256.dp)
+					.applyShimmer(shimmerState)
+			)
+			
+			Text(
+				text = similar.fullTitle,
+				color = black,
+				fontSize = TextUnit(14f, TextUnitType.Sp),
+				fontWeight = FontWeight.SemiBold,
+				modifier = Modifier
+					.padding(4.dp)
+			)
+		}
+	}
+}
+
+@Preview(showBackground = false)
+@Composable
+fun SimilarItemPreview() {
+	SimilarItem(similar = Movie.item1.similars[0])
+}
+
+@Composable
+fun PosterItem(poster: Poster) {
+	var shimmerState by remember { mutableStateOf(ComposeUtils.Shimmer.START) }
+	
+	Image(
+		painter = rememberImagePainter(
+			data = poster.link,
+			builder = {
+				listener(object : ImageRequest.Listener {
+					override fun onError(request: ImageRequest, throwable: Throwable) {
+						super.onError(request, throwable)
+						i("ImageRequest", throwable.message!!)
+						throwable.printStackTrace()
+					}
+					
+					override fun onStart(request: ImageRequest) {
+						super.onStart(request)
+						shimmerState = ComposeUtils.Shimmer.START
+					}
+					
+					override fun onSuccess(request: ImageRequest, metadata: ImageResult.Metadata) {
+						super.onSuccess(request, metadata)
+						shimmerState = ComposeUtils.Shimmer.STOP
+					}
+				})
+			}
+		),
+		contentDescription = null,
+		modifier = Modifier
+			.padding(start = 4.dp, end = 4.dp, top = 8.dp, bottom = 8.dp)
+			.size(128.dp, 224.dp)
+			.applyShimmer(shimmerState)
+	)
+}
+
+@Preview(showBackground = false)
+@Composable
+fun PosterItemPreview() {
+	PosterItem(poster = Movie.item1.posters.posters[0])
+}
+
+@Composable
+fun BackdropItem(backdrop: Backdrop) {
+	var shimmerState by remember { mutableStateOf(ComposeUtils.Shimmer.START) }
+	
+	Image(
+		painter = rememberImagePainter(
+			data = backdrop.link,
+			builder = {
+				listener(object : ImageRequest.Listener {
+					override fun onError(request: ImageRequest, throwable: Throwable) {
+						super.onError(request, throwable)
+						i("ImageRequest", throwable.message!!)
+						throwable.printStackTrace()
+					}
+					
+					override fun onStart(request: ImageRequest) {
+						super.onStart(request)
+						shimmerState = ComposeUtils.Shimmer.START
+					}
+					
+					override fun onSuccess(request: ImageRequest, metadata: ImageResult.Metadata) {
+						super.onSuccess(request, metadata)
+						shimmerState = ComposeUtils.Shimmer.STOP
+					}
+				})
+			}
+		),
+		contentDescription = null,
+		modifier = Modifier
+			.padding(start = 4.dp, end = 4.dp, top = 8.dp, bottom = 8.dp)
+			.size(128.dp, 224.dp)
+			.applyShimmer(shimmerState)
+	)
+}
