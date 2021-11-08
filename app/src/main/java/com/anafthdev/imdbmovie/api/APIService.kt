@@ -8,6 +8,9 @@ import java.util.concurrent.TimeUnit
 
 object APIService {
 	
+	const val BASE_URL = "https://imdb-api.com/"
+	const val POSTER_URL = "https://image.tmdb.org/t/p/w300/"
+	
 	fun createClient(): APIClient {
 		val client = OkHttpClient.Builder()
 			.addInterceptor(HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY))
@@ -17,7 +20,7 @@ object APIService {
 			.build()
 		
 		return Retrofit.Builder()
-			.baseUrl("https://imdb-api.com/")
+			.baseUrl(BASE_URL)
 			.addConverterFactory(GsonConverterFactory.create())
 			.client(client)
 			.build().create(APIClient::class.java)

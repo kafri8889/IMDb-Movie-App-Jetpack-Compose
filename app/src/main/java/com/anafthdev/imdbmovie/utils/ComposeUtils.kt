@@ -133,7 +133,7 @@ object ComposeUtils {
 		@SuppressLint("UnnecessaryComposedModifier")
 		fun Modifier.applyShimmer(
 			state: String,
-			durationInMillis: Int = 1000
+			animationDurationInMillis: Int = 1000
 		) = composed { then(
 			run {
 				val transition = rememberInfiniteTransition()
@@ -141,7 +141,7 @@ object ComposeUtils {
 					initialValue = 0f,
 					targetValue = 2000f,
 					animationSpec = infiniteRepeatable(
-						tween(durationMillis = durationInMillis, easing = FastOutSlowInEasing),
+						tween(durationMillis = animationDurationInMillis, easing = FastOutSlowInEasing),
 						RepeatMode.Reverse
 					)
 				)

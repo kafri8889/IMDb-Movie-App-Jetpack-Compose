@@ -3,6 +3,7 @@ package com.anafthdev.imdbmovie.ui
 import android.app.Activity
 import android.graphics.drawable.ColorDrawable
 import android.util.Log
+import android.util.Log.i
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -15,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.HorizontalAlignmentLine
 import androidx.compose.ui.platform.LocalContext
@@ -41,6 +43,7 @@ import com.anafthdev.imdbmovie.data.NavigationDestination
 import com.anafthdev.imdbmovie.data.NavigationDrawerItem
 import com.anafthdev.imdbmovie.model.most_popular_movie.MostPopularMovie
 import com.anafthdev.imdbmovie.model.movie.*
+import com.anafthdev.imdbmovie.ui.theme.black
 import com.anafthdev.imdbmovie.ui.theme.default_primary
 import com.anafthdev.imdbmovie.ui.theme.text_color
 import com.anafthdev.imdbmovie.utils.AppUtils.toast
@@ -282,4 +285,81 @@ fun MostPopularMovieItemPreview() {
 		item = MostPopularMovie.item1,
 		navHostController = navHostController
 	)
+}
+
+@OptIn(ExperimentalUnitApi::class)
+@Composable
+fun ActorItem(actor: Actor) {
+	var shimmerState by remember { mutableStateOf(ComposeUtils.Shimmer.START) }
+	
+	Row(
+		modifier = Modifier
+			.fillMaxWidth()
+			.padding(8.dp)
+	) {
+		Image(
+			painter = rememberImagePainter(
+				data = actor.image,
+				builder = {
+					listener(object : ImageRequest.Listener {
+						override fun onError(request: ImageRequest, throwable: Throwable) {
+							super.onError(request, throwable)
+							i("ImageRequest", throwable.message!!)
+							throwable.message
+						}
+						
+						override fun onStart(request: ImageRequest) {
+							super.onStart(request)
+							shimmerState = ComposeUtils.Shimmer.START
+						}
+						
+						override fun onSuccess(request: ImageRequest, metadata: ImageResult.Metadata) {
+							super.onSuccess(request, metadata)
+							shimmerState = ComposeUtils.Shimmer.STOP
+						}
+					})
+				}
+			),
+			contentScale = ContentScale.Crop,
+			contentDescription = null,
+			modifier = Modifier
+				.size(72.dp)
+				.weight(1f, false)
+				.clip(RoundedCornerShape(100))
+				.applyShimmer(shimmerState)
+		)
+		
+		Column(
+			verticalArrangement = Arrangement.Center,
+			modifier = Modifier
+				.weight(4f)
+				.padding(start = 8.dp)
+		) {
+			Text(
+				text = actor.name,
+				color = black,
+				fontSize = TextUnit(14f, TextUnitType.Sp),
+				fontWeight = FontWeight.SemiBold,
+				modifier = Modifier
+					.fillMaxWidth()
+			)
+			
+			Text(
+				text = actor.asCharacter,
+				color = text_color,
+				fontSize = TextUnit(14f, TextUnitType.Sp),
+				fontWeight = FontWeight.Normal,
+				modifier = Modifier
+					.fillMaxWidth()
+					.padding(top = 4.dp)
+			)
+		}
+	}
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ActorItemPreview() {
+	val actor = Movie.item1.actorList[0]
+	ActorItem(actor = actor)
 }
