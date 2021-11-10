@@ -20,6 +20,7 @@ import androidx.navigation.*
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.anafthdev.imdbmovie.BuildConfig
 import com.anafthdev.imdbmovie.R
 import com.anafthdev.imdbmovie.data.NavigationDestination
 import com.anafthdev.imdbmovie.data.NavigationDrawerItem
@@ -33,6 +34,7 @@ import com.anafthdev.imdbmovie.utils.AppDatastore
 import com.anafthdev.imdbmovie.utils.DatabaseUtils
 import com.anafthdev.imdbmovie.view_model.MovieViewModel
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import javax.inject.Inject
 
 class MainActivity : ComponentActivity() {
@@ -44,6 +46,11 @@ class MainActivity : ComponentActivity() {
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
 		(applicationContext as Application).appComponent.inject(this)
+		if (BuildConfig.DEBUG) Timber.plant(object : Timber.DebugTree() {
+			override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
+				super.log(priority, "DEBUG_$tag", message, t)
+			}
+		})
 		setContent {
 			IMDbMovieTheme {
 				MainActivityScreen()
@@ -102,6 +109,7 @@ class MainActivity : ComponentActivity() {
 					val movieID = entry.arguments?.getString("movieID")
 					MovieInformationScreen(
 						navigationController = navController,
+						viewModel = viewModel,
 						movieID = movieID ?: ""
 					)
 				}
@@ -126,7 +134,7 @@ class MainActivity : ComponentActivity() {
 				}
 				
 				composable(NavigationDestination.SETTINGS_SCREEN) {
-					SettingsScreen()
+					SettingsScreen(appDatastore, scope)
 				}
 			}
 		}

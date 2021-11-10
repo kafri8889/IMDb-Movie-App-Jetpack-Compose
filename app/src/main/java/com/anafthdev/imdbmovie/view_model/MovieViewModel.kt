@@ -1,5 +1,6 @@
 package com.anafthdev.imdbmovie.view_model
 
+import android.app.Application
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -12,20 +13,37 @@ import com.anafthdev.imdbmovie.data.OperationCallback
 import com.anafthdev.imdbmovie.data.Repository
 import com.anafthdev.imdbmovie.model.most_popular_movie.MostPopularMovie
 import com.anafthdev.imdbmovie.model.most_popular_movie.MostPopularMovieResponse
+import com.anafthdev.imdbmovie.model.movie.Movie
+import com.anafthdev.imdbmovie.utils.AppDatastore
+import com.anafthdev.imdbmovie.utils.AppUtils.toast
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import javax.inject.Inject
 
-class MovieViewModel @Inject constructor(private val repository: Repository): ViewModel() {
+class MovieViewModel @Inject constructor(
+	private val application: Application,
+	private val repository: Repository,
+	private val appDatastore: AppDatastore
+	): ViewModel() {
 	
 	private var _isRefreshing = MutableStateFlow(false)
 	private var _mostPopularMovies = MutableLiveData(listOf<MostPopularMovie>())
 	
+	private var _currentMovieID = MutableStateFlow("")
+	private var _currentMovie = MutableLiveData(Movie.default)
+	
 	val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 	val mostPopularMovies: LiveData<List<MostPopularMovie>> = _mostPopularMovies
+	
+	val currentMovieID: StateFlow<String> = _currentMovieID.asStateFlow()
+	val currentMovie: LiveData<Movie> = _currentMovie
+	
+	fun setMovieID(id: String) = viewModelScope.launch { _currentMovieID.emit(id) }
 	
 	fun refresh(type: String, isConnected: Boolean) {
 		when (type) {
@@ -42,24 +60,24 @@ class MovieViewModel @Inject constructor(private val repository: Repository): Vi
 							}
 							
 							_mostPopularMovies.postValue(testData)
-							Log.i("MovieViewModel", "_mostPopularMovies: ${_mostPopularMovies.value}")
+							Timber.i("_mostPopularMovies: ${_mostPopularMovies.value}")
 						}
 						
 						override fun onError(msg: String) {
 							Handler(Looper.getMainLooper()).post {
-								Log.i("MovieViewModel", "error: $msg")
+								Timber.i("error: $msg")
 							}
 						}
 					}, MovieType.MOST_POPULAR_MOVIE, isConnected)
 				}
 				
 				viewModelScope.launch {
-					_isRefreshing.value = true
+					_isRefreshing.emit(true)
 					delay(2000)
+					_isRefreshing.emit(false)
 				}.invokeOnCompletion { Handler(Looper.getMainLooper()).post {
 					_mostPopularMovies.postValue(listOf(MostPopularMovie.item1, MostPopularMovie.item2))
-					Log.i("MovieViewModel", "_mostPopularMovies: ${_mostPopularMovies.value}")
-					_isRefreshing.value = false
+					Timber.i("_mostPopularMovies: ${_mostPopularMovies.value}")
 				} }
 			}
 			BOX_OFFICE_MOVIE -> {}
@@ -82,12 +100,12 @@ class MovieViewModel @Inject constructor(private val repository: Repository): Vi
 							}
 							
 							_mostPopularMovies.postValue(data.mostPopularMovies)
-							Log.i("MovieViewModel", "_mostPopularMovies: ${_mostPopularMovies.value}")
+							Timber.i("_mostPopularMovies: ${_mostPopularMovies.value}")
 						}
 						
 						override fun onError(msg: String) {
 							Handler(Looper.getMainLooper()).post {
-								Log.i("MovieViewModel", "error: $msg")
+								Timber.i("error: $msg")
 							}
 						}
 					}, MovieType.MOST_POPULAR_MOVIE, isConnected)
@@ -96,6 +114,30 @@ class MovieViewModel @Inject constructor(private val repository: Repository): Vi
 			BOX_OFFICE_MOVIE -> {}
 			TOP_250_MOVIE -> {}
 			MOVIE_INFORMATION -> {}
+		}
+	}
+	
+	fun getMovie(id: String) {
+		Timber.i("request to get movie with id: $id...")
+		viewModelScope.launch {
+			appDatastore.getApiKey.collect { apiKey ->
+				repository.getMovie(id, apiKey, object : OperationCallback<Any> {
+					override fun onSuccess(data: Any) {
+						Handler(Looper.getMainLooper()).post {
+							data as Movie
+							if (data.errorMessage != null) {
+								data.errorMessage.toast(application)
+								Timber.i("error: ${data.errorMessage}")
+							} else _currentMovie.value = data
+							Timber.i("_currentMovie: $data")
+						}
+					}
+					
+					override fun onError(msg: String) {
+						Timber.i("error: $msg")
+					}
+				})
+			}
 		}
 	}
 	

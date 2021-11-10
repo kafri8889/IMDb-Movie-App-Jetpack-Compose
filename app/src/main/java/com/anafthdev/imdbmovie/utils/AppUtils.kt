@@ -14,6 +14,7 @@ object AppUtils {
 	
 	object PreferencesKey {
 		const val API_KEY = "api_key"
+		const val USE_SAMPLE_DATA = "use_sample_data"
 	}
 	
 //	infix fun Int.greaterThanEqualTo(other: Int): Boolean = this >= other

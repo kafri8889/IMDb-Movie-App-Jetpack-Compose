@@ -9,4 +9,17 @@ data class Posters(
     val year: String,
     val backdrops: List<Backdrop>,
     val posters: List<Poster>
-)
+) {
+    companion object {
+        val default = Posters(
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            emptyList(),
+            emptyList()
+        )
+    }
+}

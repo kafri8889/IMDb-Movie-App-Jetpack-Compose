@@ -10,5 +10,9 @@ class Repository(
 		else localDataSource.retrieve(callback, movieType)
 	}
 	
+	fun getMovie(id: String, apiKey: String, callback: OperationCallback<Any>) {
+		remoteDataSource.getMovie(id, apiKey, callback)
+	}
+	
 	fun cancelRemote() = remoteDataSource.cancel()
 }

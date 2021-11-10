@@ -7,4 +7,15 @@ data class Poster(
     val language: String,
     val width: Int,
     val height: Int
-)
+) {
+     companion object {
+         val default = Poster(
+             "",
+             "",
+             0.0,
+             "",
+             0,
+             0
+         )
+     }
+}

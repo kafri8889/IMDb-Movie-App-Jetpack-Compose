@@ -6,6 +6,7 @@ import android.util.Log
 import android.util.Log.i
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -41,10 +42,12 @@ import coil.request.ImageResult
 import com.anafthdev.imdbmovie.R
 import com.anafthdev.imdbmovie.data.NavigationDestination
 import com.anafthdev.imdbmovie.data.NavigationDrawerItem
+import com.anafthdev.imdbmovie.model.SettingsPreferences
 import com.anafthdev.imdbmovie.model.most_popular_movie.MostPopularMovie
 import com.anafthdev.imdbmovie.model.movie.*
 import com.anafthdev.imdbmovie.ui.theme.black
 import com.anafthdev.imdbmovie.ui.theme.default_primary
+import com.anafthdev.imdbmovie.ui.theme.default_secondary
 import com.anafthdev.imdbmovie.ui.theme.text_color
 import com.anafthdev.imdbmovie.utils.AppUtils.toast
 import com.anafthdev.notepadcompose.utils.ComposeUtils
@@ -155,8 +158,8 @@ fun MostPopularMovieItem(
 		onClick = {
 			val destination = NavigationDestination.MOVIE_INFORMATION_SCREEN
 			navHostController.navigate(
-//				"$destination/${item.id}"
-				"$destination/${Movie.item1.id}"
+				"$destination/${item.id}"
+//				"$destination/${Movie.item1.id}"
 			) {
 				navHostController.graph.startDestinationRoute?.let { destination ->
 					popUpTo(destination) {
@@ -369,14 +372,16 @@ fun ActorItemPreview() {
 	ExperimentalMaterialApi::class,
 )
 @Composable
-fun SimilarItem(similar: Similar) {
+fun SimilarItem(
+	navHostController: NavHostController,
+	similar: Similar
+) {
 	var shimmerState by remember { mutableStateOf(ComposeUtils.Shimmer.START) }
-	
 	Card(
 		shape = RoundedCornerShape(12.dp),
 		elevation = 4.dp,
 		onClick = {
-			// onclick
+		
 		},
 		modifier = Modifier
 			.padding(8.dp)
@@ -427,7 +432,11 @@ fun SimilarItem(similar: Similar) {
 @Preview(showBackground = false)
 @Composable
 fun SimilarItemPreview() {
-	SimilarItem(similar = Movie.item1.similars[0])
+	val navHostController = rememberNavController()
+	SimilarItem(
+		navHostController = navHostController,
+		similar = Movie.item1.similars[0]
+	)
 }
 
 @Composable
@@ -468,7 +477,7 @@ fun PosterItem(poster: Poster) {
 @Preview(showBackground = false)
 @Composable
 fun PosterItemPreview() {
-	PosterItem(poster = Movie.item1.posters.posters[0])
+	PosterItem(poster = Movie.item1.posters!!.posters[0])
 }
 
 @Composable
@@ -504,4 +513,113 @@ fun BackdropItem(backdrop: Backdrop) {
 			.size(128.dp, 224.dp)
 			.applyShimmer(shimmerState)
 	)
+}
+
+@OptIn(ExperimentalUnitApi::class)
+@Composable
+fun SettingsPreferences(
+	preferences: SettingsPreferences,
+	onClick: (Any?) -> Unit
+) {
+	when (preferences.type) {
+		SettingsPreferences.PreferencesType.BASIC -> {
+			Column(
+				verticalArrangement = Arrangement.Center,
+				modifier = Modifier
+					.fillMaxWidth()
+					.height(64.dp)
+					.clickable { onClick(null) }
+			) {
+				Text(
+					text = preferences.title,
+					color = black,
+					fontSize = TextUnit(16f, TextUnitType.Sp),
+					fontWeight = FontWeight.SemiBold,
+					modifier = Modifier.padding(start = 12.dp)
+				)
+				
+				if (preferences.summary != null) {
+					Text(
+						text = preferences.summary,
+						color = text_color,
+						fontSize = TextUnit(14f, TextUnitType.Sp),
+						fontWeight = FontWeight.Normal,
+						modifier = Modifier.padding(start = 12.dp)
+					)
+				}
+			}
+		}
+		
+		SettingsPreferences.PreferencesType.SWITCH -> {
+			Row(
+				verticalAlignment = Alignment.CenterVertically,
+				modifier = Modifier
+					.fillMaxWidth()
+					.height(64.dp)
+					.clickable {
+						onClick(!preferences.checked)
+					}
+			) {
+				Column(
+					verticalArrangement = Arrangement.Center,
+					modifier = Modifier
+						.weight(2f)
+				) {
+					Text(
+						text = preferences.title,
+						color = black,
+						fontSize = TextUnit(16f, TextUnitType.Sp),
+						fontWeight = FontWeight.SemiBold,
+						modifier = Modifier.padding(start = 12.dp)
+					)
+					
+					if (preferences.summary != null) {
+						Text(
+							text = preferences.summary,
+							color = text_color,
+							fontSize = TextUnit(14f, TextUnitType.Sp),
+							fontWeight = FontWeight.Normal,
+							modifier = Modifier.padding(start = 12.dp)
+						)
+					}
+				}
+				
+				Switch(
+					checked = preferences.checked,
+					colors = SwitchDefaults.colors(
+						checkedThumbColor = default_primary,
+						checkedTrackColor = default_primary,
+						checkedTrackAlpha = 0.4f
+					),
+					onCheckedChange = {
+						onClick(!preferences.checked)
+					},
+					modifier = Modifier
+						.weight(0.4f)
+				)
+			}
+		}
+	}
+}
+
+@Preview(name = "SettingsPreferencesPreview_Basic", showBackground = true)
+@Composable
+fun SettingsPreferencesPreviewBasic() {
+	val preferences = SettingsPreferences(
+		"Title",
+		"Summary",
+		type = SettingsPreferences.PreferencesType.BASIC
+	)
+	SettingsPreferences(preferences = preferences) {}
+}
+
+@Preview(name = "SettingsPreferencesPreview_Switch", showBackground = true)
+@Composable
+fun SettingsPreferencesPreviewSwitch() {
+	val preferences = SettingsPreferences(
+		"Title",
+		"Summary",
+		type = SettingsPreferences.PreferencesType.SWITCH
+	)
+	SettingsPreferences(preferences = preferences) {}
 }

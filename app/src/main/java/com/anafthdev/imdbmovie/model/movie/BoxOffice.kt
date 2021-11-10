@@ -5,4 +5,13 @@ data class BoxOffice(
     val cumulativeWorldwideGross: String,
     val grossUSA: String,
     val openingWeekendUSA: String
-)
+) {
+    companion object {
+        val default = BoxOffice(
+            "",
+            "",
+            "",
+            "",
+        )
+    }
+}

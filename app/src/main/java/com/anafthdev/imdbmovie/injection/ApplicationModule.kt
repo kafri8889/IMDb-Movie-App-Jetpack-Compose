@@ -28,9 +28,11 @@ class ApplicationModule(private val application: Application) {
 	@Provides
 	@Singleton
 	fun providesViewModel() = MovieViewModel(
+		application,
 		Repository(
 			LocalDataSource(providesDatabaseUtils()),
 			RemoteDataSource()
-		)
+		),
+		providesAppDatastore()
 	)
 }

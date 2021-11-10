@@ -11,35 +11,35 @@ data class Movie(
     
     @ColumnInfo(name = "awards")
     @SerializedName("awards")
-    val awards: String,
+    val awards: String?,
 
     @ColumnInfo(name = "companies")
     @SerializedName("companies")
-    val companies: String,
+    val companies: String?,
 
     @ColumnInfo(name = "contentRating")
     @SerializedName("contentRating")
-    val contentRating: String,
+    val contentRating: String?,
 
     @ColumnInfo(name = "countries")
     @SerializedName("countries")
-    val countries: String,
+    val countries: String?,
 
     @ColumnInfo(name = "directors")
     @SerializedName("directors")
-    val directors: String,
+    val directors: String?,
 
     @ColumnInfo(name = "errorMessage")
     @SerializedName("errorMessage")
-    val errorMessage: String,
+    val errorMessage: String?,
     
     @ColumnInfo(name = "fullTitle")
     @SerializedName("fullTitle")
-    val fullTitle: String,
+    val fullTitle: String?,
 
     @ColumnInfo(name = "genres")
     @SerializedName("genres")
-    val genres: String,
+    val genres: String?,
 
     @PrimaryKey
     @SerializedName("id")
@@ -47,87 +47,87 @@ data class Movie(
 
     @ColumnInfo(name = "imDbRating")
     @SerializedName("imDbRating")
-    val imDbRating: String,
+    val imDbRating: String?,
 
     @ColumnInfo(name = "imDbRatingVotes")
     @SerializedName("imDbRatingVotes")
-    val imDbRatingVotes: String,
+    val imDbRatingVotes: String?,
 
     @ColumnInfo(name = "image")
     @SerializedName("image")
-    val image: String,
+    val image: String?,
 
     @ColumnInfo(name = "keywords")
     @SerializedName("keywords")
-    val keywords: String,
+    val keywords: String?,
 
     @ColumnInfo(name = "languages")
     @SerializedName("languages")
-    val languages: String,
+    val languages: String?,
 
     @ColumnInfo(name = "metacriticRating")
     @SerializedName("metacriticRating")
-    val metacriticRating: String,
+    val metacriticRating: String?,
 
     @ColumnInfo(name = "originalTitle")
     @SerializedName("originalTitle")
-    val originalTitle: String,
+    val originalTitle: String?,
 
     @ColumnInfo(name = "plot")
     @SerializedName("plot")
-    val plot: String,
+    val plot: String?,
 
     @ColumnInfo(name = "plotLocal")
     @SerializedName("plotLocal")
-    val plotLocal: String,
+    val plotLocal: String?,
 
     @ColumnInfo(name = "plotLocalIsRtl")
     @SerializedName("plotLocalIsRtl")
-    val plotLocalIsRtl: Boolean,
+    val plotLocalIsRtl: Boolean?,
 
     @ColumnInfo(name = "releaseDate")
     @SerializedName("releaseDate")
-    val releaseDate: String,
+    val releaseDate: String?,
 
     @ColumnInfo(name = "runtimeMins")
     @SerializedName("runtimeMins")
-    val runtimeMins: String,
+    val runtimeMins: String?,
 
     @ColumnInfo(name = "runtimeStr")
     @SerializedName("runtimeStr")
-    val runtimeStr: String,
+    val runtimeStr: String?,
     
     @ColumnInfo(name = "stars")
     @SerializedName("stars")
-    val stars: String,
+    val stars: String?,
 
     @ColumnInfo(name = "tagline")
     @SerializedName("tagline")
-    val tagline: String,
+    val tagline: String?,
     
     @ColumnInfo(name = "title")
     @SerializedName("title")
-    val title: String,
+    val title: String?,
 
     @ColumnInfo(name = "type")
     @SerializedName("type")
-    val type: String,
+    val type: String?,
 
     @ColumnInfo(name = "writers")
     @SerializedName("writers")
-    val writers: String,
+    val writers: String?,
 
     @ColumnInfo(name = "year")
     @SerializedName("year")
-    val year: String,
+    val year: String?,
 
     @ColumnInfo(name = "boxOffice")
     @SerializedName("boxOffice")
-    val boxOffice: BoxOffice,
+    val boxOffice: BoxOffice?,
 
     @ColumnInfo(name = "posters")
     @SerializedName("posters")
-    val posters: Posters,
+    val posters: Posters?,
 
     @ColumnInfo(name = "writerList")
     @SerializedName("writerList")
@@ -192,6 +192,49 @@ data class Movie(
 ): Serializable {
     
     companion object {
+        val default = Movie(
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            "",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            emptyList(),
+            emptyList(),
+            emptyList(),
+            emptyList(),
+            emptyList(),
+            emptyList(),
+            emptyList(),
+            emptyList(),
+            emptyList(),
+            emptyList(),
+        )
+        
         val item1 = Movie(
             "Top rated movie #13 | Won 4 Oscars157 wins & 220 nominations total",
             "Warner Bros., Legendary Entertainment, Syncopy",
