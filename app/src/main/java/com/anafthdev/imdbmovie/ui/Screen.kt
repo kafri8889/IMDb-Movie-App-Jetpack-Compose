@@ -1,15 +1,14 @@
 package com.anafthdev.imdbmovie.ui
 
+import android.app.Application
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.util.Log.i
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.LocalOverScrollConfiguration
-import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
-import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -19,8 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.ColorPainter
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -44,13 +41,18 @@ import coil.request.ImageRequest
 import coil.request.ImageResult
 import com.anafthdev.imdbmovie.R
 import com.anafthdev.imdbmovie.api.APIService
+import com.anafthdev.imdbmovie.data.LocalDataSource
+import com.anafthdev.imdbmovie.data.RemoteDataSource
+import com.anafthdev.imdbmovie.data.Repository
 import com.anafthdev.imdbmovie.model.SettingsPreferences
 import com.anafthdev.imdbmovie.model.movie.Movie
+import com.anafthdev.imdbmovie.model.movie.Similar
 import com.anafthdev.imdbmovie.ui.theme.black
 import com.anafthdev.imdbmovie.ui.theme.text_color
 import com.anafthdev.imdbmovie.utils.AppDatastore
-import com.anafthdev.imdbmovie.utils.AppUtils.isConnectedToInternet
-import com.anafthdev.imdbmovie.utils.AppUtils.toast
+import com.anafthdev.imdbmovie.utils.AppUtils.get
+import com.anafthdev.imdbmovie.utils.DatabaseUtils
+import com.anafthdev.imdbmovie.utils.NetworkUtil
 import com.anafthdev.imdbmovie.view_model.MovieViewModel
 import com.anafthdev.notepadcompose.utils.ComposeUtils
 import com.anafthdev.notepadcompose.utils.ComposeUtils.Shimmer.applyShimmer
@@ -65,7 +67,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.lang.IndexOutOfBoundsException
 import java.text.DecimalFormat
 
 @Composable
@@ -74,14 +75,21 @@ fun MostPopularMovieScreen(
 	movieViewModel: MovieViewModel
 ) {
 	val context = LocalContext.current
+	
+	// prevent for multiple api call
 	var hasAlreadyNavigate by remember { mutableStateOf(false) }
+	
 	val isRefreshing by movieViewModel.isRefreshing.collectAsState()
+	
+	// observe whether the internet is available or not
+	// works to reload photos in [MostPopularMovieItem] if network is available
+	val isNetworkAvailable by movieViewModel.networkUtil.isNetworkAvailable.collectAsState()
+	
 	val testData by movieViewModel.mostPopularMovies.observeAsState()
 	
 	if (!hasAlreadyNavigate) {
 		movieViewModel.get(
 			MovieViewModel.MOST_POPULAR_MOVIE,
-			context.isConnectedToInternet()
 		)
 		true.also { hasAlreadyNavigate = it }
 	}
@@ -92,14 +100,15 @@ fun MostPopularMovieScreen(
 	SwipeRefresh(
 		state = swipeRefreshState,
 		onRefresh = {
-			movieViewModel.refresh(MovieViewModel.MOST_POPULAR_MOVIE, context.isConnectedToInternet())
+			movieViewModel.refresh(MovieViewModel.MOST_POPULAR_MOVIE)
 		}
 	) {
 		LazyColumn {
 			items(testData!!) {
 				MostPopularMovieItem(
 					item = it,
-					navHostController = navigationController
+					navHostController = navigationController,
+					isNetworkAvailable = isNetworkAvailable
 				)
 			}
 		}
@@ -131,27 +140,34 @@ fun MovieInformationScreen(
 	viewModel: MovieViewModel,
 	movieID: String
 ) {
+	// TODO: 12/11/2021 Save Movie ke local db, pas get dari API kalo ada di local db, ambil yg di local db
 	val context = LocalContext.current
 	val scope = rememberCoroutineScope()
 	val pagerState = rememberPagerState()
-	val currentMovieID by viewModel.currentMovieID.collectAsState()
 	val currentMovie by viewModel.currentMovie.observeAsState()
+//	var currentMovie by remember { mutableStateOf(Movie.default) }
 	
-	var shimmerState by remember { mutableStateOf(ComposeUtils.Shimmer.START) }
+//	Handler(Looper.getMainLooper()).postDelayed({
+//		currentMovie = Movie.item1
+//	}, 4000)
+	
+	val shimmerList = ComposeUtils.Shimmer.createShimmer(
+		"image",
+		"full_title",
+	)
+	
 	var isRequestExecute by remember { mutableStateOf(false) }
-	
-//	viewModel.setMovieID(movieID)
-//	viewModel.getMovie(currentMovieID)
 	
 	// prevent for multiple api call
 	if (!isRequestExecute) {
-		viewModel.getMovie(movieID)
-		isRequestExecute = true
+		viewModel.getMovie(movieID, true)
+		true.also { isRequestExecute = it }
 	}
 	
-//	val movie = Movie.item1
-	val movie = if (currentMovie == null) Movie.item1 else currentMovie!!
+	val movie = if (currentMovie == null) Movie.default else currentMovie!!
 	val pages = listOf("Overview", "Actors", "Posters")
+	
+	if (movie.fullTitle != null) shimmerList.get { it.tag == "full_title" }!!.state = ComposeUtils.Shimmer.STOP
 	
 	Column {
 		Column(
@@ -172,17 +188,17 @@ fun MovieInformationScreen(
 								override fun onError(request: ImageRequest, throwable: Throwable) {
 									super.onError(request, throwable)
 									throwable.printStackTrace()
-									Log.e("ImageRequest", "error: ${throwable.message}")
+									Timber.e("Image request error: ${throwable.message}")
 								}
 								
 								override fun onStart(request: ImageRequest) {
 									super.onStart(request)
-									shimmerState = ComposeUtils.Shimmer.START
+									shimmerList.get { it.tag == "image" }!!.state = ComposeUtils.Shimmer.START
 								}
 								
 								override fun onSuccess(request: ImageRequest, metadata: ImageResult.Metadata) {
 									super.onSuccess(request, metadata)
-									shimmerState = ComposeUtils.Shimmer.STOP
+									shimmerList.get { it.tag == "image" }!!.state = ComposeUtils.Shimmer.STOP
 								}
 							})
 						}
@@ -192,7 +208,7 @@ fun MovieInformationScreen(
 					modifier = Modifier
 						.height(512.dp)
 						.fillMaxWidth()
-						.applyShimmer(shimmerState)
+						.applyShimmer(shimmerList.get { it.tag == "image" }!!.state)
 						.constrainAs(image) {
 							top.linkTo(parent.top)
 							start.linkTo(parent.start)
@@ -200,50 +216,100 @@ fun MovieInformationScreen(
 						}
 				)
 				
-				Column(
-					verticalArrangement = Arrangement.Center,
-					horizontalAlignment = Alignment.CenterHorizontally,
-					modifier = Modifier
-						.size(72.dp)
-						.padding(16.dp)
-						.clip(RoundedCornerShape(12.dp))
-						.constrainAs(contentRating) {
-							top.linkTo(parent.top)
-							end.linkTo(parent.end)
+				if (movie.contentRating != null) {
+					if (movie.contentRating.isNotBlank()) {
+						Column(
+							verticalArrangement = Arrangement.Center,
+							horizontalAlignment = Alignment.CenterHorizontally,
+							modifier = Modifier
+								.size(72.dp)
+								.padding(16.dp)
+								.clip(RoundedCornerShape(12.dp))
+								.constrainAs(contentRating) {
+									top.linkTo(parent.top)
+									end.linkTo(parent.end)
+								}
+								.background(Color(0xFFF0F0F0))
+						) {
+							Text(
+								text = "${movie.contentRating}${if (movie.contentRating[0].isDigit()) "+" else ""}",
+								fontWeight = FontWeight.SemiBold
+							)
 						}
-						.background(Color(0xFFF0F0F0))
-				) {
-					Text(
-						text = "${movie.contentRating ?: "0"}+",
-						fontWeight = FontWeight.SemiBold
-					)
+					}
 				}
+				
+//				Column(
+//					verticalArrangement = Arrangement.Center,
+//					horizontalAlignment = Alignment.CenterHorizontally,
+//					modifier = Modifier
+//						.size(72.dp)
+//						.padding(16.dp)
+//						.clip(RoundedCornerShape(12.dp))
+//						.constrainAs(contentRating) {
+//							top.linkTo(parent.top)
+//							end.linkTo(parent.end)
+//						}
+//						.background(Color(0xFFF0F0F0))
+//				) {
+//					Text(
+//						text = run {
+//							if (movie.contentRating != null) {
+//								if (movie.contentRating.isNotBlank()) {
+//									"${movie.contentRating}${if (movie.contentRating[0].isDigit()) "+" else ""}"
+//								} else "-"
+//							} else "-"
+//						},
+//						fontWeight = FontWeight.SemiBold
+//					)
+//				}
 			}
 			
 			Column {
+				val fullTitleState = shimmerList.get { it.tag == "full_title" }!!
 				Text(
-					text = movie.fullTitle ?: "-",
+					text = movie.fullTitle ?: "Default Title",
+					color = if (fullTitleState.state == ComposeUtils.Shimmer.START) {
+						Color.Transparent
+					} else { black },
 					fontWeight = FontWeight.Bold,
 					fontSize = TextUnit(18f, TextUnitType.Sp),
 					modifier = Modifier
 						.padding(top = 8.dp, bottom = 2.dp, start = 14.dp, end = 8.dp)
 						.wrapContentWidth(Alignment.Start)
+						.clip(RoundedCornerShape(8.dp))
+						.applyShimmer(fullTitleState)
 				)
 				
-				Text(
-					text = run {
-						if (movie.genres == null) "-  |  -  |  -"
-						else {
-							val genres = movie.genres.split(", ".toRegex())
-							"${genres[0]}  |  ${movie.runtimeStr}  |  ${movie.releaseDate}"
-						}
-					},
-					fontWeight = FontWeight.Light,
-					fontSize = TextUnit(13f, TextUnitType.Sp),
-					modifier = Modifier
-						.padding(start = 14.dp, end = 8.dp, top = 2.dp, bottom = 8.dp)
-						.fillMaxWidth()
-				)
+				if (
+					(movie.genres != null) and
+					(movie.runtimeStr != null) and
+					(movie.releaseDate != null)
+				) {
+					Text(
+						text = run {
+							if (movie.genres == null) "-  |  -  |  -"
+							else {
+								val genres = movie.genres.split(", ".toRegex())
+								"${genres[0]}  |  ${movie.runtimeStr}  |  ${movie.releaseDate}"
+							}
+						},
+						fontWeight = FontWeight.Light,
+						fontSize = TextUnit(13f, TextUnitType.Sp),
+						modifier = Modifier
+							.padding(start = 14.dp, end = 8.dp, top = 2.dp, bottom = 8.dp)
+							.fillMaxWidth()
+					)
+				} else {
+					Text(
+						text ="",
+						modifier = Modifier
+							.padding(top = 8.dp, bottom = 2.dp, start = 14.dp, end = 8.dp)
+							.width(128.dp)
+							.clip(RoundedCornerShape(8.dp))
+							.applyShimmer(ComposeUtils.Shimmer.START)
+					)
+				}
 				
 				Row(
 					modifier = Modifier.padding(start = 14.dp, end = 8.dp, bottom = 8.dp)
@@ -417,8 +483,6 @@ fun MovieInformationScreen(
 						1 -> ActorScreen(movie = movie)
 						2 -> PosterScreen(movie = movie)
 					}
-					
-					i("pager", "p: ${this.currentPage}")
 				}
 				
 				Text(
@@ -433,26 +497,55 @@ fun MovieInformationScreen(
 					movie.directors.split(", ".toRegex())
 				}
 				
-				FlowRow(
-					modifier = Modifier
-						.fillMaxWidth()
-						.wrapContentHeight()
-						.padding(start = 10.dp)
-				) {
-					for (director in directors) {
-						Text(
-							text = director,
-							color = black,
-							fontWeight = FontWeight.Normal,
-							fontSize = TextUnit(14f, TextUnitType.Sp),
-							modifier = Modifier
-								.padding(4.dp)
-								.clip(RoundedCornerShape(100))
-								.background(Color(0xFFECECEC))
-								.padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 4.dp)
-						)
+				if (movie.directors != null) {
+					FlowRow(
+						modifier = Modifier
+							.fillMaxWidth()
+							.wrapContentHeight()
+							.padding(start = 10.dp)
+					) {
+						for (director in directors) {
+							Text(
+								text = director,
+								color = black,
+								fontWeight = FontWeight.Normal,
+								fontSize = TextUnit(14f, TextUnitType.Sp),
+								modifier = Modifier
+									.padding(4.dp)
+									.clip(RoundedCornerShape(100))
+									.background(Color(0xFFECECEC))
+									.padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 4.dp)
+							)
+						}
 					}
+				} else {
+					Text(
+						text = "default directors",
+						color = Color.Transparent,
+						fontWeight = FontWeight.Normal,
+						fontSize = TextUnit(14f, TextUnitType.Sp),
+						modifier = Modifier
+							.padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 4.dp)
+							.clip(RoundedCornerShape(8.dp))
+							.applyShimmer(ComposeUtils.Shimmer.START)
+					)
 				}
+				
+				Text(
+					text = "Writers",
+					fontWeight = FontWeight.Bold,
+					fontSize = TextUnit(16f, TextUnitType.Sp),
+					modifier = Modifier
+						.padding(start = 14.dp, end = 8.dp, top = 18.dp, bottom = 2.dp)
+				)
+				
+				Text(
+					text = "Companies",
+					fontWeight = FontWeight.Bold,
+					fontSize = TextUnit(16f, TextUnitType.Sp),
+					modifier = Modifier
+						.padding(start = 14.dp, end = 8.dp, top = 18.dp, bottom = 2.dp)
+				)
 				
 				Text(
 					text = "Genres",
@@ -465,26 +558,40 @@ fun MovieInformationScreen(
 				val genres = if (movie.genres == null) listOf("-") else {
 					movie.genres.split(", ".toRegex())
 				}
-				FlowRow(
-					modifier = Modifier
-						.fillMaxWidth()
-						.wrapContentHeight()
-						.padding(start = 10.dp)
-				) {
-					for (genre in genres) {
-						Text(
-							text = genre,
-							color = black,
-							fontWeight = FontWeight.Normal,
-							fontSize = TextUnit(14f, TextUnitType.Sp),
-							modifier = Modifier
-								.padding(4.dp)
-								.clip(RoundedCornerShape(100))
-								.background(Color(0xFFECECEC))
-								.padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 4.dp)
-						)
+				
+				if (movie.genres != null) {
+					FlowRow(
+						modifier = Modifier
+							.fillMaxWidth()
+							.wrapContentHeight()
+							.padding(start = 10.dp)
+					) {
+						for (genre in genres) {
+							Text(
+								text = genre,
+								color = black,
+								fontWeight = FontWeight.Normal,
+								fontSize = TextUnit(14f, TextUnitType.Sp),
+								modifier = Modifier
+									.padding(4.dp)
+									.clip(RoundedCornerShape(100))
+									.background(Color(0xFFECECEC))
+									.padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 4.dp)
+							)
+						}
 					}
-				}		
+				} else {
+					Text(
+						text = "default genres",
+						color = Color.Transparent,
+						fontWeight = FontWeight.Normal,
+						fontSize = TextUnit(14f, TextUnitType.Sp),
+						modifier = Modifier
+							.padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 4.dp)
+							.clip(RoundedCornerShape(8.dp))
+							.applyShimmer(ComposeUtils.Shimmer.START)
+					)
+				}
 				
 				val awards = if (movie.awards == null) listOf("-") else {
 					movie.awards.split("\\|".toRegex())
@@ -498,26 +605,59 @@ fun MovieInformationScreen(
 						.padding(start = 14.dp, end = 8.dp, top = 16.dp, bottom = 2.dp)
 				)
 				
-				FlowRow(
-					modifier = Modifier
-						.fillMaxWidth()
-						.wrapContentHeight()
-						.padding(start = 10.dp)
-				) {
-					for (award in awards) {
-						Text(
-							text = award,
-							textAlign = TextAlign.Center,
-							color = black,
-							fontWeight = FontWeight.Normal,
-							fontSize = TextUnit(14f, TextUnitType.Sp),
-							modifier = Modifier
-								.padding(4.dp)
-								.clip(RoundedCornerShape(100))
-								.background(Color(0xFFECECEC))
-								.padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 4.dp)
-						)
+				if (movie.awards != null) {
+					FlowRow(
+						modifier = Modifier
+							.fillMaxWidth()
+							.wrapContentHeight()
+							.padding(start = 10.dp)
+					) {
+						if (awards.isNotEmpty()) {
+							for (award in awards) {
+								Text(
+									text = award,
+									textAlign = TextAlign.Center,
+									color = black,
+									fontWeight = FontWeight.Normal,
+									fontSize = TextUnit(14f, TextUnitType.Sp),
+									modifier = Modifier
+										.padding(4.dp)
+										.clip(RoundedCornerShape(100))
+										.background(Color(0xFFECECEC))
+										.padding(
+											start = 8.dp,
+											end = 8.dp,
+											top = 4.dp,
+											bottom = 4.dp
+										)
+								)
+							}
+						} else {
+							Text(
+								text = " - ",
+								textAlign = TextAlign.Center,
+								color = black,
+								fontWeight = FontWeight.Normal,
+								fontSize = TextUnit(14f, TextUnitType.Sp),
+								modifier = Modifier
+									.padding(4.dp)
+									.clip(RoundedCornerShape(100))
+									.background(Color(0xFFECECEC))
+									.padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 4.dp)
+							)
+						}
 					}
+				} else {
+					Text(
+						text = "default awards",
+						color = Color.Transparent,
+						fontWeight = FontWeight.Normal,
+						fontSize = TextUnit(14f, TextUnitType.Sp),
+						modifier = Modifier
+							.padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 4.dp)
+							.clip(RoundedCornerShape(8.dp))
+							.applyShimmer(ComposeUtils.Shimmer.START)
+					)
 				}
 				
 				Text(
@@ -532,11 +672,23 @@ fun MovieInformationScreen(
 					LocalOverScrollConfiguration provides null
 				) {
 					LazyRow {
-						items(movie.similars) {
-							SimilarItem(
-								navHostController = navigationController,
-								similar = it
-							)
+						// check whether movie is default or not with fullTitle
+						if (movie.fullTitle == null) {
+							items(4) {
+								SimilarItem(
+									navHostController = null,
+									viewModel = viewModel,
+									similar = null
+								)
+							}
+						} else {
+							items(movie.similars) {
+								SimilarItem(
+									navHostController = navigationController,
+									viewModel = viewModel,
+									similar = it
+								)
+							}
 						}
 					}
 				}
@@ -548,10 +700,19 @@ fun MovieInformationScreen(
 @Preview(showSystemUi = true)
 @Composable
 fun MovieInformationScreenPreview() {
+	val context = LocalContext.current
 	val navController = rememberNavController()
 	MovieInformationScreen(
 		movieID = "",
-		viewModel = viewModel(),
+		viewModel = MovieViewModel(
+			Application(),
+			Repository(
+				LocalDataSource(DatabaseUtils(context)),
+				RemoteDataSource()
+			),
+			AppDatastore(context),
+			NetworkUtil(context)
+		),
 		navigationController = navController
 	)
 }
@@ -634,7 +795,7 @@ fun SettingsScreen(
 	}
 }
 
-@Preview(showBackground = true)
+//@Preview(showBackground = true)
 @Composable
 fun SettingsScreenPreview() {
 	val settingsPreferences = listOf(
@@ -659,7 +820,9 @@ fun SettingsScreenPreview() {
 @OptIn(ExperimentalUnitApi::class)
 @Composable
 fun OverviewScreen(movie: Movie) {
-	var shimmerState by remember { mutableStateOf(ComposeUtils.Shimmer.START) }
+	val shimmerList = ComposeUtils.Shimmer.createShimmer(
+		"image",
+	)
 	
 	Row(
 		modifier = Modifier
@@ -671,6 +834,7 @@ fun OverviewScreen(movie: Movie) {
 				contentDescription = null,
 				modifier = Modifier
 					.weight(1f)
+					.height(160.dp)
 					.padding(4.dp)
 			)
 		} else {
@@ -687,21 +851,22 @@ fun OverviewScreen(movie: Movie) {
 							
 							override fun onStart(request: ImageRequest) {
 								super.onStart(request)
-								shimmerState = ComposeUtils.Shimmer.START
+								shimmerList.get { it.tag == "image" }!!.state = ComposeUtils.Shimmer.START
 							}
 							
 							override fun onSuccess(request: ImageRequest, metadata: ImageResult.Metadata) {
 								super.onSuccess(request, metadata)
-								shimmerState = ComposeUtils.Shimmer.STOP
+								shimmerList.get { it.tag == "image" }!!.state = ComposeUtils.Shimmer.STOP
 							}
 						})
 					}
 				),
 				contentDescription = null,
+				contentScale = ContentScale.FillBounds,
 				modifier = Modifier
-					.weight(1f)
 					.padding(4.dp)
-					.applyShimmer(shimmerState)
+					.weight(1f)
+					.applyShimmer(shimmerList.get { it.tag == "image" }!!.state)
 			)
 		}
 		
@@ -711,18 +876,33 @@ fun OverviewScreen(movie: Movie) {
 				.padding(8.dp)
 				.verticalScroll(rememberScrollState())
 		) {
-			Text(
-				text = movie.plot ?: "-",
-				color = text_color,
-				fontSize = TextUnit(14f, TextUnitType.Sp),
-				letterSpacing = TextUnit(0.9f, TextUnitType.Sp),
-				lineHeight = TextUnit(20f, TextUnitType.Sp)
-			)
+			if (movie.plot != null) {
+				Text(
+					text = movie.plot,
+					color = text_color,
+					fontSize = TextUnit(14f, TextUnitType.Sp),
+					letterSpacing = TextUnit(0.9f, TextUnitType.Sp),
+					lineHeight = TextUnit(20f, TextUnitType.Sp)
+				)
+			} else {
+				for (i in 0 until 8) {
+					Text(
+						text = "",
+						color = Color.Transparent,
+						modifier = Modifier
+							.fillMaxWidth()
+							.height(20.dp)
+							.padding(top = 8.dp)
+							.clip(RoundedCornerShape(8.dp))
+							.applyShimmer(ComposeUtils.Shimmer.START)
+					)
+				}
+			}
 		}
 	}
 }
 
-@Preview(showBackground = true)
+//@Preview(showBackground = true)
 @Composable
 fun OverviewScreenPreview() {
 	OverviewScreen(movie = Movie.item1)
@@ -751,7 +931,7 @@ fun ActorScreen(movie: Movie) {
 	}
 }
 
-@Preview(showBackground = true)
+//@Preview(showBackground = true)
 @Composable
 fun ActorScreenPreview() {
 	ActorScreen(movie = Movie.item1)
@@ -784,14 +964,14 @@ fun PosterScreen(movie: Movie) {
 	}
 }
 
-@Preview(showBackground = true)
+//@Preview(showBackground = true)
 @Composable
 fun PosterScreenPreview() {
 	PosterScreen(Movie.item1)
 }
 
 @OptIn(ExperimentalUnitApi::class)
-@Preview(showBackground = true)
+//@Preview(showBackground = true)
 @Composable
 fun ItemPrev() {
 

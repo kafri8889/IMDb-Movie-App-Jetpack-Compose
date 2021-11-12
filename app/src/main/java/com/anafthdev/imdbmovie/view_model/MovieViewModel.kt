@@ -16,6 +16,7 @@ import com.anafthdev.imdbmovie.model.most_popular_movie.MostPopularMovieResponse
 import com.anafthdev.imdbmovie.model.movie.Movie
 import com.anafthdev.imdbmovie.utils.AppDatastore
 import com.anafthdev.imdbmovie.utils.AppUtils.toast
+import com.anafthdev.imdbmovie.utils.NetworkUtil
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -28,24 +29,22 @@ import javax.inject.Inject
 class MovieViewModel @Inject constructor(
 	private val application: Application,
 	private val repository: Repository,
-	private val appDatastore: AppDatastore
+	val appDatastore: AppDatastore,
+	val networkUtil: NetworkUtil
 	): ViewModel() {
 	
 	private var _isRefreshing = MutableStateFlow(false)
 	private var _mostPopularMovies = MutableLiveData(listOf<MostPopularMovie>())
 	
-	private var _currentMovieID = MutableStateFlow("")
 	private var _currentMovie = MutableLiveData(Movie.default)
 	
 	val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 	val mostPopularMovies: LiveData<List<MostPopularMovie>> = _mostPopularMovies
 	
-	val currentMovieID: StateFlow<String> = _currentMovieID.asStateFlow()
 	val currentMovie: LiveData<Movie> = _currentMovie
 	
-	fun setMovieID(id: String) = viewModelScope.launch { _currentMovieID.emit(id) }
-	
-	fun refresh(type: String, isConnected: Boolean) {
+	fun refresh(type: String) {
+		val isConnectedToInternet = networkUtil.isNetworkAvailable.value
 		when (type) {
 			MOST_POPULAR_MOVIE -> {
 				viewModelScope.launch {
@@ -53,7 +52,7 @@ class MovieViewModel @Inject constructor(
 						override fun onSuccess(data: Any) {
 							data as MostPopularMovieResponse
 							val testData = ArrayList(data.mostPopularMovies).apply { add(MostPopularMovie.item2) }
-							if (isConnected) {
+							if (isConnectedToInternet) {
 								repository.localDataSource.databaseUtils.deleteAllMostPopularMovie {
 									repository.localDataSource.databaseUtils.insertMostPopularMovie(testData) {}
 								}
@@ -68,7 +67,7 @@ class MovieViewModel @Inject constructor(
 								Timber.i("error: $msg")
 							}
 						}
-					}, MovieType.MOST_POPULAR_MOVIE, isConnected)
+					}, MovieType.MOST_POPULAR_MOVIE, isConnectedToInternet)
 				}
 				
 				viewModelScope.launch {
@@ -86,14 +85,15 @@ class MovieViewModel @Inject constructor(
 		}
 	}
 	
-	fun get(type: String, isConnected: Boolean) {
+	fun get(type: String) {
+		val isConnectedToInternet = networkUtil.isNetworkAvailable.value
 		when (type) {
 			MOST_POPULAR_MOVIE -> {
 				viewModelScope.launch {
 					repository.fetchData(object : OperationCallback<Any> {
 						override fun onSuccess(data: Any) {
 							data as MostPopularMovieResponse
-							if (isConnected) {
+							if (isConnectedToInternet) {
 								repository.localDataSource.databaseUtils.deleteAllMostPopularMovie {
 									repository.localDataSource.databaseUtils.insertMostPopularMovie(data.mostPopularMovies) {}
 								}
@@ -108,7 +108,7 @@ class MovieViewModel @Inject constructor(
 								Timber.i("error: $msg")
 							}
 						}
-					}, MovieType.MOST_POPULAR_MOVIE, isConnected)
+					}, MovieType.MOST_POPULAR_MOVIE, isConnectedToInternet)
 				}
 			}
 			BOX_OFFICE_MOVIE -> {}
@@ -117,26 +117,39 @@ class MovieViewModel @Inject constructor(
 		}
 	}
 	
-	fun getMovie(id: String) {
+	/**
+	 * @param id movie ID
+	 * @param execute true to execute request, false otherwise (work for prevent
+	 *                  auto-calling when isUseSampleData value changes).
+	 */
+	fun getMovie(id: String, execute: Boolean = false) {
 		Timber.i("request to get movie with id: $id...")
 		viewModelScope.launch {
-			appDatastore.getApiKey.collect { apiKey ->
-				repository.getMovie(id, apiKey, object : OperationCallback<Any> {
-					override fun onSuccess(data: Any) {
-						Handler(Looper.getMainLooper()).post {
-							data as Movie
-							if (data.errorMessage != null) {
-								data.errorMessage.toast(application)
-								Timber.i("error: ${data.errorMessage}")
-							} else _currentMovie.value = data
-							Timber.i("_currentMovie: $data")
+			appDatastore.isUseSampleData.collect { isUseSampleData ->
+				if (!isUseSampleData) {
+					if (execute) {
+						appDatastore.getApiKey.collect { apiKey ->
+							repository.getMovie(id, apiKey, object : OperationCallback<Any> {
+								override fun onSuccess(data: Any) {
+									Handler(Looper.getMainLooper()).post {
+										data as Movie
+										if (data.errorMessage != null) {
+											data.errorMessage.toast(application)
+											Timber.i("error: ${data.errorMessage}")
+										}
+										
+										_currentMovie.value = data
+										Timber.i("_currentMovie: $data")
+									}
+								}
+								
+								override fun onError(msg: String) {
+									Timber.i("error: $msg")
+								}
+							})
 						}
 					}
-					
-					override fun onError(msg: String) {
-						Timber.i("error: $msg")
-					}
-				})
+				} else { _currentMovie.value = Movie.item1 }
 			}
 		}
 	}

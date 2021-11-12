@@ -1,6 +1,7 @@
 package com.anafthdev.imdbmovie.ui
 
 import android.app.Activity
+import android.app.Application
 import android.graphics.drawable.ColorDrawable
 import android.util.Log
 import android.util.Log.i
@@ -40,8 +41,7 @@ import coil.request.CachePolicy
 import coil.request.ImageRequest
 import coil.request.ImageResult
 import com.anafthdev.imdbmovie.R
-import com.anafthdev.imdbmovie.data.NavigationDestination
-import com.anafthdev.imdbmovie.data.NavigationDrawerItem
+import com.anafthdev.imdbmovie.data.*
 import com.anafthdev.imdbmovie.model.SettingsPreferences
 import com.anafthdev.imdbmovie.model.most_popular_movie.MostPopularMovie
 import com.anafthdev.imdbmovie.model.movie.*
@@ -49,11 +49,18 @@ import com.anafthdev.imdbmovie.ui.theme.black
 import com.anafthdev.imdbmovie.ui.theme.default_primary
 import com.anafthdev.imdbmovie.ui.theme.default_secondary
 import com.anafthdev.imdbmovie.ui.theme.text_color
+import com.anafthdev.imdbmovie.utils.AppDatastore
+import com.anafthdev.imdbmovie.utils.AppUtils.get
 import com.anafthdev.imdbmovie.utils.AppUtils.toast
+import com.anafthdev.imdbmovie.utils.DatabaseUtils
+import com.anafthdev.imdbmovie.utils.NetworkUtil
+import com.anafthdev.imdbmovie.view_model.MovieViewModel
 import com.anafthdev.notepadcompose.utils.ComposeUtils
 import com.anafthdev.notepadcompose.utils.ComposeUtils.Shimmer.applyShimmer
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 @OptIn(ExperimentalUnitApi::class, ExperimentalMaterialApi::class)
 @Composable
@@ -148,8 +155,11 @@ fun DrawerPreview() {
 @Composable
 fun MostPopularMovieItem(
 	item: MostPopularMovie,
-	navHostController: NavHostController
+	navHostController: NavHostController,
+	isNetworkAvailable: Boolean
 ) {
+//	val isConnectedToInternet by remember { mutableStateOf(isNetworkAvailable) }
+	
 	Card(
 		shape = RoundedCornerShape(14.dp),
 		elevation = 3.dp,
@@ -159,7 +169,6 @@ fun MostPopularMovieItem(
 			val destination = NavigationDestination.MOVIE_INFORMATION_SCREEN
 			navHostController.navigate(
 				"$destination/${item.id}"
-//				"$destination/${Movie.item1.id}"
 			) {
 				navHostController.graph.startDestinationRoute?.let { destination ->
 					popUpTo(destination) {
@@ -183,7 +192,7 @@ fun MostPopularMovieItem(
 				painter = rememberImagePainter(
 					data = item.image,
 					builder = {
-						diskCachePolicy(CachePolicy.ENABLED)
+						if (isNetworkAvailable) data(item.image)
 						listener(object : ImageRequest.Listener {
 							override fun onError(request: ImageRequest, throwable: Throwable) {
 								super.onError(request, throwable)
@@ -237,7 +246,7 @@ fun MostPopularMovieItem(
 					verticalAlignment = Alignment.CenterVertically
 				) {
 					Image(
-						painter = painterResource(id = com.anafthdev.imdbmovie.R.drawable.ic_star_24),
+						painter = painterResource(id = R.drawable.ic_star_24),
 						contentDescription = null,
 						modifier = Modifier.size(28.dp)
 					)
@@ -286,7 +295,8 @@ fun MostPopularMovieItemPreview() {
 	val navHostController = rememberNavController()
 	MostPopularMovieItem(
 		item = MostPopularMovie.item1,
-		navHostController = navHostController
+		navHostController = navHostController,
+		isNetworkAvailable = false
 	)
 }
 
@@ -373,15 +383,21 @@ fun ActorItemPreview() {
 )
 @Composable
 fun SimilarItem(
-	navHostController: NavHostController,
-	similar: Similar
+	navHostController: NavHostController?,
+	viewModel: MovieViewModel,
+	similar: Similar?
 ) {
-	var shimmerState by remember { mutableStateOf(ComposeUtils.Shimmer.START) }
+	val shimmerList = ComposeUtils.Shimmer.createShimmer(
+		"image",
+		"full_title"
+	)
 	Card(
 		shape = RoundedCornerShape(12.dp),
 		elevation = 4.dp,
 		onClick = {
-		
+			if (similar != null) {
+				viewModel.getMovie(similar.id, true)
+			}
 		},
 		modifier = Modifier
 			.padding(8.dp)
@@ -389,42 +405,59 @@ fun SimilarItem(
 		Column {
 			Image(
 				painter = rememberImagePainter(
-					data = similar.image,
+					data = similar?.image ?: "",
 					builder = {
 						listener(object : ImageRequest.Listener {
 							override fun onError(request: ImageRequest, throwable: Throwable) {
 								super.onError(request, throwable)
-								i("ImageRequest", throwable.message!!)
+								Timber.i(throwable.message!!)
 								throwable.printStackTrace()
 							}
 							
 							override fun onStart(request: ImageRequest) {
 								super.onStart(request)
-								shimmerState = ComposeUtils.Shimmer.START
+								shimmerList.get { it.tag == "image" }!!.state = ComposeUtils.Shimmer.START
 							}
 							
 							override fun onSuccess(request: ImageRequest, metadata: ImageResult.Metadata) {
 								super.onSuccess(request, metadata)
-								shimmerState = ComposeUtils.Shimmer.STOP
+								shimmerList.get { it.tag == "image" }!!.state = ComposeUtils.Shimmer.STOP
 							}
 						})
 					}
 				),
 				contentDescription = null,
+				contentScale = ContentScale.FillBounds,
 				modifier = Modifier
 					.width(172.dp)
 					.height(256.dp)
-					.applyShimmer(shimmerState)
+					.applyShimmer(shimmerList.get { it.tag == "image" }!!.state)
 			)
 			
-			Text(
-				text = similar.fullTitle,
-				color = black,
-				fontSize = TextUnit(14f, TextUnitType.Sp),
-				fontWeight = FontWeight.SemiBold,
-				modifier = Modifier
-					.padding(4.dp)
-			)
+			if (similar != null) {
+				Text(
+					text = similar.fullTitle,
+					color = black,
+					maxLines = 1,
+					fontSize = TextUnit(14f, TextUnitType.Sp),
+					fontWeight = FontWeight.SemiBold,
+					modifier = Modifier
+						.width(172.dp)
+						.padding(4.dp)
+				)
+			} else {
+				Text(
+					text = "default title",
+					color = Color.Transparent,
+					fontSize = TextUnit(14f, TextUnitType.Sp),
+					fontWeight = FontWeight.SemiBold,
+					modifier = Modifier
+						.height(20.dp)
+						.padding(4.dp)
+						.clip(RoundedCornerShape(8.dp))
+						.applyShimmer(shimmerList.get { it.tag == "full_title" }!!.state)
+				)
+			}
 		}
 	}
 }
@@ -432,9 +465,19 @@ fun SimilarItem(
 @Preview(showBackground = false)
 @Composable
 fun SimilarItemPreview() {
+	val context = LocalContext.current
 	val navHostController = rememberNavController()
 	SimilarItem(
 		navHostController = navHostController,
+		viewModel = MovieViewModel(
+			Application(),
+			Repository(
+				LocalDataSource(DatabaseUtils(context)),
+				RemoteDataSource()
+			),
+			AppDatastore(context),
+			NetworkUtil(context)
+		),
 		similar = Movie.item1.similars[0]
 	)
 }

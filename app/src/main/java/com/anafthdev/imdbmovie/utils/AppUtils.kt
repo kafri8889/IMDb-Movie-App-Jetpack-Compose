@@ -49,25 +49,16 @@ object AppUtils {
 //		}
 //	}
 	
-	fun Context.isConnectedToInternet(): Boolean {
-		val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-		val netCapabilities = connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
-		
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-			if (netCapabilities != null) {
-				return netCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) or
-						netCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
-			}
-		} else {
-			connectivityManager.allNetworks.forEach {
-				connectivityManager.getNetworkInfo(it)?.apply {
-					return (type == ConnectivityManager.TYPE_WIFI) or
-							(type == ConnectivityManager.TYPE_MOBILE)
-				}
+	fun <T> Collection<T>.get(predicate: (T) -> Boolean): T? {
+		var result: T? = null
+		for (item in this) {
+			if (predicate(item)) {
+				result = item
+				break
 			}
 		}
 		
-		return false
+		return result
 	}
 	
 	fun Any.toast(context: Context, length: Int = Toast.LENGTH_SHORT) = Toast.makeText(context, this.toString(), length).show()

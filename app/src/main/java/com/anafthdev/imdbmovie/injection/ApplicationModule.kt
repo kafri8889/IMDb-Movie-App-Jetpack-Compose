@@ -5,6 +5,7 @@ import com.anafthdev.imdbmovie.data.RemoteDataSource
 import com.anafthdev.imdbmovie.data.Repository
 import com.anafthdev.imdbmovie.utils.AppDatastore
 import com.anafthdev.imdbmovie.utils.DatabaseUtils
+import com.anafthdev.imdbmovie.utils.NetworkUtil
 import com.anafthdev.imdbmovie.view_model.MovieViewModel
 import dagger.Module
 import dagger.Provides
@@ -27,12 +28,17 @@ class ApplicationModule(private val application: Application) {
 	
 	@Provides
 	@Singleton
+	fun providesNetworkUtil() = NetworkUtil(application)
+	
+	@Provides
+	@Singleton
 	fun providesViewModel() = MovieViewModel(
 		application,
 		Repository(
 			LocalDataSource(providesDatabaseUtils()),
 			RemoteDataSource()
 		),
-		providesAppDatastore()
+		providesAppDatastore(),
+		providesNetworkUtil()
 	)
 }

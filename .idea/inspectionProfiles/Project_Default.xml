@@ -124,19 +124,19 @@
     <inspection_tool class="OCUnusedProperty" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="OverriddenAttributeMismatch" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="OverriddenTypeMismatch" enabled="false" level="WARNING" enabled_by_default="false" />
-    <inspection_tool class="PreviewAnnotationInFunctionWithParameters" enabled="true" level="ERROR" enabled_by_default="true">
+    <inspection_tool class="PreviewAnnotationInFunctionWithParameters" enabled="false" level="ERROR" enabled_by_default="false">
       <option name="previewFile" value="true" />
     </inspection_tool>
-    <inspection_tool class="PreviewDimensionRespectsLimit" enabled="true" level="WARNING" enabled_by_default="true">
+    <inspection_tool class="PreviewDimensionRespectsLimit" enabled="false" level="WARNING" enabled_by_default="false">
       <option name="previewFile" value="true" />
     </inspection_tool>
-    <inspection_tool class="PreviewMultipleParameterProviders" enabled="true" level="ERROR" enabled_by_default="true">
+    <inspection_tool class="PreviewMultipleParameterProviders" enabled="false" level="ERROR" enabled_by_default="false">
       <option name="previewFile" value="true" />
     </inspection_tool>
-    <inspection_tool class="PreviewMustBeTopLevelFunction" enabled="true" level="ERROR" enabled_by_default="true">
+    <inspection_tool class="PreviewMustBeTopLevelFunction" enabled="false" level="ERROR" enabled_by_default="false">
       <option name="previewFile" value="true" />
     </inspection_tool>
-    <inspection_tool class="PreviewNeedsComposableAnnotation" enabled="true" level="ERROR" enabled_by_default="true">
+    <inspection_tool class="PreviewNeedsComposableAnnotation" enabled="false" level="ERROR" enabled_by_default="false">
       <option name="previewFile" value="true" />
     </inspection_tool>
     <inspection_tool class="PrivateCategoryShouldBeNearImplementation" enabled="false" level="WARNING" enabled_by_default="false" />
@@ -152,6 +152,7 @@
     <inspection_tool class="ShellCheck" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="SingletonConstructor" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="StringLocalization" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="TransitionPropertiesLabel" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="TypeCustomizer" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="UnavailableInDeploymentTarget" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="UnnecessaryQualifiedReference" enabled="false" level="WARNING" enabled_by_default="false" />
@@ -159,6 +160,7 @@
     <inspection_tool class="UnresolvedMessage" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="UnusedImportStatement" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="UnusedLocalization" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="UpdateTransitionLabel" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="UsingZeroAsNil" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="YAMLDuplicatedKeys" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="YAMLRecursiveAlias" enabled="false" level="ERROR" enabled_by_default="false" />

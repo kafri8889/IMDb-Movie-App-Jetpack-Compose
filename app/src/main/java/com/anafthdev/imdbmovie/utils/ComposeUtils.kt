@@ -130,6 +130,25 @@ object ComposeUtils {
 		const val START = "start_shimmer"
 		const val STOP = "stop_shimmer"
 		
+		data class Shimmer(val tag: String, var state: String, val  animationDurationInMillis: Int = 1000)
+		
+		@Composable
+		fun createShimmer(vararg tag: String): List<Shimmer> {
+			if (tag.isEmpty()) return emptyList()
+			
+			val shimmerList = ArrayList<Shimmer>()
+			tag.forEach {
+				shimmerList.add(
+					Shimmer(
+						it,
+						remember { mutableStateOf(START) }.value
+					)
+				)
+			}
+			
+			return shimmerList
+		}
+		
 		@SuppressLint("UnnecessaryComposedModifier")
 		fun Modifier.applyShimmer(
 			state: String,
@@ -157,6 +176,36 @@ object ComposeUtils {
 				)
 				
 				if (state == START) background(brush) else background(color = Color.Transparent)
+			}
+		) }
+		
+		@SuppressLint("UnnecessaryComposedModifier")
+		fun Modifier.applyShimmer(
+			shimmer: Shimmer,
+			animationDurationInMillis: Int = 1000
+		) = composed { then(
+			run {
+				val transition = rememberInfiniteTransition()
+				val translateAnim by transition.animateFloat(
+					initialValue = 0f,
+					targetValue = 2000f,
+					animationSpec = infiniteRepeatable(
+						tween(durationMillis = animationDurationInMillis, easing = FastOutSlowInEasing),
+						RepeatMode.Reverse
+					)
+				)
+				
+				val brush = Brush.linearGradient(
+					colors = listOf(
+						Color.LightGray.copy(0.9f),
+						Color.LightGray.copy(0.2f),
+						Color.LightGray.copy(0.9f)
+					),
+					start = Offset(10f, 10f),
+					end = Offset(translateAnim, translateAnim)
+				)
+				
+				if (shimmer.state == START) background(brush) else background(color = Color.Transparent)
 			}
 		) }
 		
