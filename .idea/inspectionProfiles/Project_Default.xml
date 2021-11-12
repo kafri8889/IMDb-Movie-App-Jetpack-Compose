@@ -2,9 +2,6 @@
   <profile version="1.0">
     <option name="myName" value="Project Default" />
     <inspection_tool class="AccessorsWereOverridden" enabled="false" level="WARNING" enabled_by_default="false" />
-    <inspection_tool class="ApiName" enabled="false" level="ERROR" enabled_by_default="false" />
-    <inspection_tool class="ApiNamespace" enabled="false" level="ERROR" enabled_by_default="false" />
-    <inspection_tool class="ApiParameter" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="AssociatedTypeMismatch" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="CallDealloc" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="ChangeToMethod" enabled="false" level="INFORMATION" enabled_by_default="false" />
@@ -12,11 +9,8 @@
     <inspection_tool class="CheckEmptyScriptTag" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="CheckValidXmlInScriptTagBody" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="ClashingTraitMethods" enabled="false" level="WARNING" enabled_by_default="false" />
-    <inspection_tool class="Constructor" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="DelegatesTo" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="DuplicateAttribute" enabled="false" level="WARNING" enabled_by_default="false" />
-    <inspection_tool class="FullJavaName" enabled="false" level="ERROR" enabled_by_default="false" />
-    <inspection_tool class="FullMethodName" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="GrAnnotationReferencingUnknownIdentifiers" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="GrDeprecatedAPIUsage" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="GrEqualsBetweenInconvertibleTypes" enabled="false" level="WARNING" enabled_by_default="false" />
@@ -94,18 +88,12 @@
       <option name="myCustomValuesEnabled" value="true" />
     </inspection_tool>
     <inspection_tool class="HtmlUnknownTarget" enabled="false" level="WARNING" enabled_by_default="false" />
-    <inspection_tool class="IgnoreFileDuplicateEntry" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="ImplementationHasNoInterface" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="InterfaceHasNoImplementation" enabled="false" level="WARNING" enabled_by_default="false" />
-    <inspection_tool class="InvalidParameterAnnotations" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="JavaStylePropertiesInvocation" enabled="false" level="INFORMATION" enabled_by_default="false" />
     <inspection_tool class="KeyValueCoding" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="LastArgumentMustBeNull" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="MethodIsLaterInTheScope" enabled="false" level="WARNING" enabled_by_default="false" />
-    <inspection_tool class="MethodName" enabled="false" level="ERROR" enabled_by_default="false" />
-    <inspection_tool class="MethodParameterType" enabled="false" level="ERROR" enabled_by_default="false" />
-    <inspection_tool class="MethodReturnType" enabled="false" level="ERROR" enabled_by_default="false" />
-    <inspection_tool class="NamedResource" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="NewInstanceOfSingleton" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="NoAttributeForProperty" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="NoClassDefinition" enabled="false" level="WARNING" enabled_by_default="false" />
@@ -124,19 +112,19 @@
     <inspection_tool class="OCUnusedProperty" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="OverriddenAttributeMismatch" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="OverriddenTypeMismatch" enabled="false" level="WARNING" enabled_by_default="false" />
-    <inspection_tool class="PreviewAnnotationInFunctionWithParameters" enabled="false" level="ERROR" enabled_by_default="false">
+    <inspection_tool class="PreviewAnnotationInFunctionWithParameters" enabled="true" level="ERROR" enabled_by_default="true">
       <option name="previewFile" value="true" />
     </inspection_tool>
-    <inspection_tool class="PreviewDimensionRespectsLimit" enabled="false" level="WARNING" enabled_by_default="false">
+    <inspection_tool class="PreviewDimensionRespectsLimit" enabled="true" level="WARNING" enabled_by_default="true">
       <option name="previewFile" value="true" />
     </inspection_tool>
-    <inspection_tool class="PreviewMultipleParameterProviders" enabled="false" level="ERROR" enabled_by_default="false">
+    <inspection_tool class="PreviewMultipleParameterProviders" enabled="true" level="ERROR" enabled_by_default="true">
       <option name="previewFile" value="true" />
     </inspection_tool>
-    <inspection_tool class="PreviewMustBeTopLevelFunction" enabled="false" level="ERROR" enabled_by_default="false">
+    <inspection_tool class="PreviewMustBeTopLevelFunction" enabled="true" level="ERROR" enabled_by_default="true">
       <option name="previewFile" value="true" />
     </inspection_tool>
-    <inspection_tool class="PreviewNeedsComposableAnnotation" enabled="false" level="ERROR" enabled_by_default="false">
+    <inspection_tool class="PreviewNeedsComposableAnnotation" enabled="true" level="ERROR" enabled_by_default="true">
       <option name="previewFile" value="true" />
     </inspection_tool>
     <inspection_tool class="PrivateCategoryShouldBeNearImplementation" enabled="false" level="WARNING" enabled_by_default="false" />
@@ -145,14 +133,11 @@
     <inspection_tool class="RequiredAttributes" enabled="false" level="WARNING" enabled_by_default="false">
       <option name="myAdditionalRequiredHtmlAttributes" value="" />
     </inspection_tool>
-    <inspection_tool class="ResourceParameter" enabled="false" level="ERROR" enabled_by_default="false" />
-    <inspection_tool class="RestSignature" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="SecondUnsafeCall" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="SetterForReadonlyProperty" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="ShellCheck" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="SingletonConstructor" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="StringLocalization" enabled="false" level="WARNING" enabled_by_default="false" />
-    <inspection_tool class="TransitionPropertiesLabel" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="TypeCustomizer" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="UnavailableInDeploymentTarget" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="UnnecessaryQualifiedReference" enabled="false" level="WARNING" enabled_by_default="false" />
@@ -160,7 +145,6 @@
     <inspection_tool class="UnresolvedMessage" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="UnusedImportStatement" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="UnusedLocalization" enabled="false" level="WARNING" enabled_by_default="false" />
-    <inspection_tool class="UpdateTransitionLabel" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="UsingZeroAsNil" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="YAMLDuplicatedKeys" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="YAMLRecursiveAlias" enabled="false" level="ERROR" enabled_by_default="false" />
