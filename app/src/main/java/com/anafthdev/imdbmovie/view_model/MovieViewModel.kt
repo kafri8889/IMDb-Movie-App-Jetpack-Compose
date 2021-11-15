@@ -3,11 +3,11 @@ package com.anafthdev.imdbmovie.view_model
 import android.app.Application
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.anafthdev.imdbmovie.data.LocalDataSource
 import com.anafthdev.imdbmovie.data.MovieType
 import com.anafthdev.imdbmovie.data.OperationCallback
 import com.anafthdev.imdbmovie.data.Repository
@@ -17,12 +17,11 @@ import com.anafthdev.imdbmovie.model.movie.Movie
 import com.anafthdev.imdbmovie.utils.AppDatastore
 import com.anafthdev.imdbmovie.utils.AppUtils.toast
 import com.anafthdev.imdbmovie.utils.NetworkUtil
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -35,107 +34,130 @@ class MovieViewModel @Inject constructor(
 	
 	private var _isRefreshing = MutableStateFlow(false)
 	private var _mostPopularMovies = MutableLiveData(listOf<MostPopularMovie>())
-	
 	private var _currentMovie = MutableLiveData(Movie.default)
 	
 	val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 	val mostPopularMovies: LiveData<List<MostPopularMovie>> = _mostPopularMovies
-	
 	val currentMovie: LiveData<Movie> = _currentMovie
 	
-	fun refresh(type: String) {
+	fun refresh(type: MovieType) {
 		val isConnectedToInternet = networkUtil.isNetworkAvailable.value
-		when (type) {
-			MOST_POPULAR_MOVIE -> {
-				viewModelScope.launch {
-					repository.fetchData(object : OperationCallback<Any> {
-						override fun onSuccess(data: Any) {
-							data as MostPopularMovieResponse
-							val testData = ArrayList(data.mostPopularMovies).apply { add(MostPopularMovie.item2) }
-							if (isConnectedToInternet) {
-								repository.localDataSource.databaseUtils.deleteAllMostPopularMovie {
-									repository.localDataSource.databaseUtils.insertMostPopularMovie(testData) {}
+		if (isConnectedToInternet) {
+			when (type) {
+				MovieType.MOST_POPULAR_MOVIE -> {
+					viewModelScope.launch {
+						_isRefreshing.value = true
+						appDatastore.getApiKey.collect { apiKey ->
+							repository.refreshMovie(object : OperationCallback<Any> {
+								override fun onSuccess(data: Any) {
+									data as MostPopularMovieResponse
+									
+									repository.localDataSource.databaseUtils.deleteAllMostPopularMovie {
+										repository.localDataSource.databaseUtils.insertMostPopularMovie(data.mostPopularMovies) {}
+									}
+									
+									_mostPopularMovies.value = data.mostPopularMovies
+									_isRefreshing.value = false
+									Timber.i("_mostPopularMovies: ${_mostPopularMovies.value}")
 								}
-							}
-							
-							_mostPopularMovies.postValue(testData)
-							Timber.i("_mostPopularMovies: ${_mostPopularMovies.value}")
+								
+								override fun onError(msg: String, errorType: Any?) {
+									Handler(Looper.getMainLooper()).post {
+										Timber.i("error: $msg")
+									}
+								}
+							}, apiKey, MovieType.MOST_POPULAR_MOVIE)
 						}
-						
-						override fun onError(msg: String) {
-							Handler(Looper.getMainLooper()).post {
-								Timber.i("error: $msg")
-							}
-						}
-					}, MovieType.MOST_POPULAR_MOVIE, isConnectedToInternet)
+					}
 				}
-				
-				viewModelScope.launch {
-					_isRefreshing.emit(true)
-					delay(2000)
-					_isRefreshing.emit(false)
-				}.invokeOnCompletion { Handler(Looper.getMainLooper()).post {
-					_mostPopularMovies.postValue(listOf(MostPopularMovie.item1, MostPopularMovie.item2))
-					Timber.i("_mostPopularMovies: ${_mostPopularMovies.value}")
-				} }
+				MovieType.BOX_OFFICE_MOVIE -> {}
+				MovieType.TOP_250_MOVIE -> {}
+				MovieType.MOVIE_INFORMATION -> {}
 			}
-			BOX_OFFICE_MOVIE -> {}
-			TOP_250_MOVIE -> {}
-			MOVIE_INFORMATION -> {}
-		}
+		} else "No Internet Connection".toast(application)
 	}
 	
-	fun get(type: String) {
+	fun get(type: MovieType) {
+		
+		// work for prevent auto-calling when isUseSampleData or apiKey value changes
+		var execute = true
+		
 		val isConnectedToInternet = networkUtil.isNetworkAvailable.value
+		
 		when (type) {
-			MOST_POPULAR_MOVIE -> {
+			MovieType.MOST_POPULAR_MOVIE -> {
 				viewModelScope.launch {
-					repository.fetchData(object : OperationCallback<Any> {
-						override fun onSuccess(data: Any) {
-							data as MostPopularMovieResponse
-							if (isConnectedToInternet) {
-								repository.localDataSource.databaseUtils.deleteAllMostPopularMovie {
-									repository.localDataSource.databaseUtils.insertMostPopularMovie(data.mostPopularMovies) {}
+					appDatastore.isUseSampleData.collect { isUseSampleData ->
+						appDatastore.getApiKey.collect { apiKey ->
+							if (!isUseSampleData) {
+								if (execute) {
+									execute = false
+									repository.getMovie(object : OperationCallback<Any> {
+										override fun onSuccess(data: Any) {
+											data as MostPopularMovieResponse
+											
+											if (isConnectedToInternet) {
+												repository.localDataSource.databaseUtils.deleteAllMostPopularMovie {
+													repository.localDataSource.databaseUtils.insertMostPopularMovie(data.mostPopularMovies!!) {}
+												}
+											}
+											
+											_mostPopularMovies.value = data.mostPopularMovies
+											Timber.i("_mostPopularMovies: ${_mostPopularMovies.value}")
+										}
+										
+										override fun onError(msg: String, errorType: Any?) {
+											Handler(Looper.getMainLooper()).post {
+												Timber.i("error: $msg")
+											}
+										}
+									}, apiKey, MovieType.MOST_POPULAR_MOVIE, isConnectedToInternet)
 								}
-							}
-							
-							_mostPopularMovies.postValue(data.mostPopularMovies)
-							Timber.i("_mostPopularMovies: ${_mostPopularMovies.value}")
+							} else { Handler(Looper.getMainLooper()).post { _mostPopularMovies.value = listOf(MostPopularMovie.item1) } }
 						}
-						
-						override fun onError(msg: String) {
-							Handler(Looper.getMainLooper()).post {
-								Timber.i("error: $msg")
-							}
-						}
-					}, MovieType.MOST_POPULAR_MOVIE, isConnectedToInternet)
+					}
 				}
 			}
-			BOX_OFFICE_MOVIE -> {}
-			TOP_250_MOVIE -> {}
-			MOVIE_INFORMATION -> {}
+			MovieType.BOX_OFFICE_MOVIE -> {}
+			MovieType.TOP_250_MOVIE -> {}
+			MovieType.MOVIE_INFORMATION -> {}
 		}
 	}
 	
 	/**
 	 * @param id movie ID
-	 * @param execute true to execute request, false otherwise (work for prevent
-	 *                  auto-calling when isUseSampleData value changes).
 	 */
-	fun getMovie(id: String, execute: Boolean = false) {
+	fun getMovie(id: String) {
+		
+		// work for prevent auto-calling when isUseSampleData or apiKey value changes
+		var execute = true
+
+		val isConnectedToInternet = networkUtil.isNetworkAvailable.value
+		
 		Timber.i("request to get movie with id: $id...")
-		viewModelScope.launch {
+		viewModelScope.launch(Dispatchers.IO) {
 			appDatastore.isUseSampleData.collect { isUseSampleData ->
-				if (!isUseSampleData) {
-					if (execute) {
-						appDatastore.getApiKey.collect { apiKey ->
-							repository.getMovie(id, apiKey, object : OperationCallback<Any> {
+				appDatastore.getApiKey.collect { apiKey ->
+					if (!isUseSampleData) {
+						if (execute) {
+							execute = false
+							repository.getMovie(id, apiKey, isConnectedToInternet, object : OperationCallback<Any> {
 								override fun onSuccess(data: Any) {
 									Handler(Looper.getMainLooper()).post {
 										data as Movie
+										
+										var isError = false
 										if (data.errorMessage != null) {
-											data.errorMessage.toast(application)
-											Timber.i("error: ${data.errorMessage}")
+											if (data.errorMessage.isNotBlank()) {
+												isError = true
+												data.errorMessage.toast(application)
+												Timber.i("error: ${data.errorMessage}")
+											}
+										}
+										
+										if (!isError) {
+											data.dateCreated = System.currentTimeMillis()
+											repository.localDataSource.databaseUtils.insertMovie(data) {}
 										}
 										
 										_currentMovie.value = data
@@ -143,21 +165,22 @@ class MovieViewModel @Inject constructor(
 									}
 								}
 								
-								override fun onError(msg: String) {
+								override fun onError(msg: String, errorType: Any?) {
+									if (errorType != null) {
+										errorType as String
+										when (errorType) {
+											LocalDataSource.NO_MOVIE_WITH_ID -> "No Internet Connection".toast(application)
+										}
+									}
+									
+									msg.toast(application)
 									Timber.i("error: $msg")
 								}
 							})
 						}
-					}
-				} else { _currentMovie.value = Movie.item1 }
+					} else { Handler(Looper.getMainLooper()).post { _currentMovie.value = Movie.item2 } }
+				}
 			}
 		}
-	}
-	
-	companion object {
-		const val MOST_POPULAR_MOVIE = "mostPopularMovie"
-		const val BOX_OFFICE_MOVIE = "boxOfficeMovie"
-		const val TOP_250_MOVIE  = "top250Movie"
-		const val MOVIE_INFORMATION = "movieInformation"
 	}
 }

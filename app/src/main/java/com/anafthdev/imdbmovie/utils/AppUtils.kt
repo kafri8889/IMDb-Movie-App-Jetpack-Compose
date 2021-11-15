@@ -9,12 +9,20 @@ import android.util.DisplayMetrics
 import android.util.Log
 import android.view.WindowInsets
 import android.widget.Toast
+import org.joda.time.DateTime
+import org.joda.time.LocalDate
 
 object AppUtils {
 	
 	object PreferencesKey {
 		const val API_KEY = "api_key"
 		const val USE_SAMPLE_DATA = "use_sample_data"
+	}
+	
+	fun getFewDaysAheadInMillis(currentTime: Long, days: Int): Long {
+		return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+			LocalDate(currentTime).plusDays(days).toDate().time
+		} else DateTime(currentTime).plusDays(days).millis
 	}
 	
 //	infix fun Int.greaterThanEqualTo(other: Int): Boolean = this >= other

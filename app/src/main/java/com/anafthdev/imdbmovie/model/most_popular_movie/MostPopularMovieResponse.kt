@@ -1,6 +1,8 @@
 package com.anafthdev.imdbmovie.model.most_popular_movie
 
+import com.google.gson.annotations.SerializedName
+
 data class MostPopularMovieResponse(
-    val errorMessage: String,
-    val mostPopularMovies: List<MostPopularMovie>
+    @SerializedName("errorMessage") val errorMessage: String?,
+    @SerializedName("items") val mostPopularMovies: List<MostPopularMovie>
 )

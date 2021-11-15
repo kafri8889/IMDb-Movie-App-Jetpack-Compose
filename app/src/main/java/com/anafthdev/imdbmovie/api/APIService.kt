@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit
 
 object APIService {
 	
-	const val BASE_URL = "https://imdb-api.com/"
+	private const val BASE_URL = "https://imdb-api.com/"
 	const val POSTER_URL = "https://image.tmdb.org/t/p/w300/"
 	
 	fun createClient(): APIClient {

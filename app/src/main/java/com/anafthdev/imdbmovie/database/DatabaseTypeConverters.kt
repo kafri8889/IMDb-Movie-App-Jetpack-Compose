@@ -73,10 +73,10 @@ object DatabaseTypeConverters {
 	fun languageFromJSON(languageJSON: String) = Gson().fromJson(languageJSON, Array<Language>::class.java).toList()
 	
 	@TypeConverter
-	fun postersToJSON(posters: Posters) = Gson().toJson(posters)!!
+	fun postersToJSON(posters: Posters?) = Gson().toJson(posters)!!
 	
 	@TypeConverter
-	fun postersFromJSON(postersJSON: String) = Gson().fromJson(postersJSON, Posters::class.java)!!
+	fun postersFromJSON(postersJSON: String?): Posters? = Gson().fromJson(postersJSON, Posters::class.java)
 	
 	@TypeConverter
 	fun posterToJSON(posters: List<Poster>) = Gson().toJson(posters)!!

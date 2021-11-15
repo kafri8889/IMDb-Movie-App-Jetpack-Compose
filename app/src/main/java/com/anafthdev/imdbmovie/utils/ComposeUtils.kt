@@ -16,6 +16,7 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -151,7 +152,7 @@ object ComposeUtils {
 		
 		@SuppressLint("UnnecessaryComposedModifier")
 		fun Modifier.applyShimmer(
-			state: String,
+			state: String = START,
 			animationDurationInMillis: Int = 1000
 		) = composed { then(
 			run {
@@ -209,6 +210,85 @@ object ComposeUtils {
 			}
 		) }
 		
+	}
+	
+	object BounceEffect {
+		
+		data class Bounce(val tag: String, var bounceState: BounceState)
+	
+		enum class BounceState { Pressed, Release }
+		
+		@Composable
+		fun createBounce(vararg tag: String): List<Bounce> {
+			
+			val bounceList = ArrayList<Bounce>()
+			tag.forEach {
+				bounceList.add(
+					Bounce(
+						it,
+						BounceState.Release
+					)
+				)
+			}
+			
+			return bounceList
+		}
+		
+		fun Modifier.applyBounce(
+			bounce: Bounce,
+			sizeReduction: Float = 0.95f
+		) = composed { then(
+			run {
+				val transition = updateTransition(
+					targetState = bounce.bounceState,
+					label = "animation"
+				)
+				
+				val scale by transition.animateFloat(
+					transitionSpec = {
+						spring(stiffness = 900f)
+					},
+					label = ""
+				) { bounceState ->
+					if (bounceState == BounceState.Pressed) {
+						sizeReduction
+					} else 1f
+				}
+				
+				graphicsLayer(
+					scaleX = scale,
+					scaleY = scale
+				)
+			}
+		) }
+		
+		fun Modifier.applyBounce(
+			bounceState: BounceState,
+			sizeReduction: Float = 0.95f
+		) = composed { then(
+			run {
+				val transition = updateTransition(
+					targetState = bounceState,
+					label = "animation"
+				)
+				
+				val scale by transition.animateFloat(
+					transitionSpec = {
+						spring(stiffness = 900f)
+					},
+					label = ""
+				) { bounceState ->
+					if (bounceState == BounceState.Pressed) {
+						sizeReduction
+					} else 1f
+				}
+				
+				graphicsLayer(
+					scaleX = scale,
+					scaleY = scale
+				)
+			}
+		) }
 	}
 	
 	@Composable

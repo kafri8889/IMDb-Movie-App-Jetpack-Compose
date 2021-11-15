@@ -4,5 +4,5 @@ interface OperationCallback<T> {
 	
 	fun onSuccess(data: T)
 	
-	fun onError(msg: String)
+	fun onError(msg: String, errorType: Any?)
 }

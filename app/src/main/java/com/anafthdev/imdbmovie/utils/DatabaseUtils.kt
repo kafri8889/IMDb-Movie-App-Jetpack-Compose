@@ -15,6 +15,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import javax.inject.Inject
 
 class DatabaseUtils @Inject constructor(context: Context) {
@@ -36,10 +37,10 @@ class DatabaseUtils @Inject constructor(context: Context) {
 		} }
 	}
 	
-	fun isMovieExists(movie: Movie, action: (Boolean) -> Unit) {
+	fun isMovieExists(id: String, action: (Boolean) -> Unit) {
 		var isExists = false
 		scope.launch {
-			isExists = movieDatabase.isExists(movie.id)
+			isExists = movieDatabase.isExists(id)
 		}.invokeOnCompletion { Handler(Looper.getMainLooper()).post {
 			action(isExists)
 		} }
@@ -264,4 +265,14 @@ class DatabaseUtils @Inject constructor(context: Context) {
 	}.invokeOnCompletion { Handler(Looper.getMainLooper()).post {
 		action()
 	} }
+	
+	
+	/**
+	 * delete the film if a few days have passed
+	 */
+	fun deleteMovie(movie: Movie, targetDays: Int) {
+		if (AppUtils.getFewDaysAheadInMillis(movie.dateCreated, targetDays) <= System.currentTimeMillis()) {
+			deleteMovie(movie) { Timber.i("movie deleted: $movie") }
+		}
+	}
 }

@@ -5,6 +5,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.google.gson.annotations.SerializedName
 import java.io.Serializable
+import com.anafthdev.imdbmovie.utils.DatabaseUtils
 
 @Entity(tableName = "movie_table")
 data class Movie(
@@ -168,6 +169,12 @@ data class Movie(
     @ColumnInfo(name = "languageList")
     @SerializedName("languageList")
     val languageList: List<Language>,
+
+    /**
+     * date created, serves to delete data if 1 day has passed [DatabaseUtils]
+     */
+    @ColumnInfo(name = "dateCreated")
+    var dateCreated: Long = 0L
 
 //    @SerializedName("fullCast")
 //    val fullCast: Any?,

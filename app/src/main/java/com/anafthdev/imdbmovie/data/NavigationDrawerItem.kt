@@ -10,19 +10,19 @@ sealed class NavigationDrawerItem(
 ) {
 	object MostPopularMovies: NavigationDrawerItem(
 		NavigationDestination.MOST_POPULAR_MOVIE_SCREEN,
-		"Most Popular Movie",
+		"Most Popular",
 		R.drawable.ic_dot
 	)
 	
 	object BoxOfficeMovie: NavigationDrawerItem(
 		NavigationDestination.BOX_OFFICE_MOVIE_SCREEN,
-		"Box Office Movie",
+		"Box Office",
 		R.drawable.ic_dot
 	)
 	
 	object Top250Movie: NavigationDrawerItem(
 		NavigationDestination.TOP_250_MOVIE_SCREEN,
-		"Top 250 Movie",
+		"Top 250",
 		R.drawable.ic_dot
 	)
 	

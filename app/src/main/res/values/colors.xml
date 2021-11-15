@@ -6,4 +6,5 @@
 
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="picton_blue">#33B5E5</color>
 </resources>
