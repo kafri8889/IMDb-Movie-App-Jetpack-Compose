@@ -1,31 +1,37 @@
 package com.anafthdev.imdbmovie.ui
 
-import android.app.Activity
 import android.app.Application
-import android.graphics.drawable.ColorDrawable
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.util.Log.i
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.HorizontalAlignmentLine
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.ExperimentalUnitApi
@@ -37,7 +43,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberImagePainter
-import coil.request.CachePolicy
 import coil.request.ImageRequest
 import coil.request.ImageResult
 import com.anafthdev.imdbmovie.R
@@ -45,111 +50,19 @@ import com.anafthdev.imdbmovie.data.*
 import com.anafthdev.imdbmovie.model.SettingsPreferences
 import com.anafthdev.imdbmovie.model.most_popular_movie.MostPopularMovie
 import com.anafthdev.imdbmovie.model.movie.*
-import com.anafthdev.imdbmovie.ui.theme.black
-import com.anafthdev.imdbmovie.ui.theme.default_primary
-import com.anafthdev.imdbmovie.ui.theme.default_secondary
-import com.anafthdev.imdbmovie.ui.theme.text_color
+import com.anafthdev.imdbmovie.ui.theme.*
 import com.anafthdev.imdbmovie.utils.AppDatastore
 import com.anafthdev.imdbmovie.utils.AppUtils.get
-import com.anafthdev.imdbmovie.utils.AppUtils.toast
 import com.anafthdev.imdbmovie.utils.DatabaseUtils
 import com.anafthdev.imdbmovie.utils.NetworkUtil
 import com.anafthdev.imdbmovie.view_model.MovieViewModel
 import com.anafthdev.notepadcompose.utils.ComposeUtils
+import com.anafthdev.notepadcompose.utils.ComposeUtils.BounceEffect.applyBounce
 import com.anafthdev.notepadcompose.utils.ComposeUtils.Shimmer.applyShimmer
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import timber.log.Timber
-
-@OptIn(ExperimentalUnitApi::class, ExperimentalMaterialApi::class)
-@Composable
-fun DrawerItem(item: NavigationDrawerItem, isSelected: Boolean = false, onClick: () -> Unit) {
-	val backgroundColor = if (isSelected) default_primary.copy(alpha = 0.1f) else Color.Transparent
-	
-	Card(
-		onClick = onClick,
-		backgroundColor = backgroundColor,
-		shape = RoundedCornerShape(8.dp),
-		elevation = 0.dp
-	) {
-		Row(
-			verticalAlignment = Alignment.CenterVertically,
-			modifier = Modifier
-				
-				.fillMaxWidth()
-				.padding(8.dp)
-		) {
-			item.icon?.let {
-				Image(
-					painter = painterResource(id = item.icon),
-					contentDescription = null,
-					modifier = Modifier
-						.size(10.dp)
-				)
-			}
-			
-			Text(
-				text = item.title,
-				fontWeight = FontWeight.Bold,
-				fontSize = TextUnit(16f, TextUnitType.Sp),
-				modifier = Modifier
-					.padding(start = if (item.icon == null) 0.dp else 8.dp)
-			)
-		}
-	}
-}
-
-@Preview(showBackground = true)
-@Composable
-fun DrawerItemPreview() {
-	DrawerItem(item = NavigationDrawerItem.MostPopularMovies, true) {}
-}
-
-@Composable
-fun Drawer(scope: CoroutineScope, scaffoldState: ScaffoldState, navHostController: NavController) {
-	val navigationBackStackEntry by navHostController.currentBackStackEntryAsState()
-	val currentRoute = navigationBackStackEntry?.destination?.route
-	
-	val isDividerSet = remember { mutableStateOf(false) }
-	
-	Column(modifier = Modifier
-		.padding(4.dp)
-		.fillMaxHeight()
-	) {
-		LazyColumn {
-			items(NavigationDrawerItem.items) { item ->
-				if ((item.icon == null) and !isDividerSet.value) {
-					Divider()
-					isDividerSet.value = false
-				}
-				DrawerItem(item = item, isSelected = currentRoute == item.destination) {
-					navHostController.navigate(item.destination) {
-						navHostController.graph.startDestinationRoute?.let { destination ->
-							popUpTo(destination) {
-								saveState = true
-							}
-							
-							launchSingleTop = true
-							restoreState = true
-						}
-					}
-					
-					scope.launch { scaffoldState.drawerState.close() }
-				}
-			}
-		}
-	}
-}
-
-@Preview(showSystemUi = true)
-@Composable
-fun DrawerPreview() {
-	val scope = rememberCoroutineScope()
-	val scaffoldState = rememberScaffoldState(rememberDrawerState(initialValue = DrawerValue.Closed))
-	val navController = rememberNavController()
-	Drawer(scope, scaffoldState, navController)
-}
+import java.text.DecimalFormat
 
 @OptIn(ExperimentalMaterialApi::class, ExperimentalUnitApi::class)
 @Composable
@@ -158,12 +71,14 @@ fun MostPopularMovieItem(
 	navHostController: NavHostController,
 	isNetworkAvailable: Boolean
 ) {
-//	val isConnectedToInternet by remember { mutableStateOf(isNetworkAvailable) }
 	
 	Card(
 		shape = RoundedCornerShape(14.dp),
 		elevation = 3.dp,
 		modifier = Modifier
+			.focusable(true)
+			.fillMaxWidth()
+			.wrapContentHeight()
 			.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
 		onClick = {
 			val destination = NavigationDestination.MOVIE_INFORMATION_SCREEN
@@ -174,17 +89,14 @@ fun MostPopularMovieItem(
 					popUpTo(destination) {
 						saveState = true
 					}
-					
+
 					launchSingleTop = true
 					restoreState = true
 				}
 			}
 		}
 	) {
-		Column(
-			modifier = Modifier
-				.fillMaxSize()
-		) {
+		Column {
 			var shimmerState by remember { mutableStateOf(ComposeUtils.Shimmer.START) }
 			Image(
 				contentDescription = null,
@@ -224,63 +136,131 @@ fun MostPopularMovieItem(
 					.applyShimmer(shimmerState)
 			)
 			
-			Row(
-				verticalAlignment = Alignment.CenterVertically,
-				modifier = Modifier
-					.padding(top = 8.dp, bottom = 8.dp, start = 8.dp, end = 8.dp)
-			) {
-				Text(
-					text = item.fullTitle,
-					fontWeight = FontWeight.Bold,
-					fontSize = TextUnit(18f, TextUnitType.Sp),
-					modifier = Modifier
-						.padding(end = 8.dp)
-						.weight(1f)
-						.wrapContentWidth(Alignment.Start)
-				)
+			Column {
 				
+				// Title and Rating Row
 				Row(
+					verticalAlignment = Alignment.CenterVertically,
 					modifier = Modifier
-						.weight(1f)
-						.wrapContentWidth(Alignment.End),
-					verticalAlignment = Alignment.CenterVertically
+						.padding(top = 8.dp, start = 8.dp, end = 8.dp, bottom = 0.dp)
 				) {
-					Image(
-						painter = painterResource(id = R.drawable.ic_star_24),
-						contentDescription = null,
-						modifier = Modifier.size(28.dp)
+					Text(
+						text = item.title,
+						fontWeight = FontWeight.Bold,
+						fontSize = TextUnit(16f, TextUnitType.Sp),
+						maxLines = 1,
+						overflow = TextOverflow.Ellipsis,
+						modifier = Modifier
+							.padding(end = 8.dp)
+							.weight(2.4f)
+							.wrapContentWidth(Alignment.Start)
 					)
-					Column {
-						Text(
-							text = buildAnnotatedString {
-								withStyle(
-									SpanStyle(
-										color = text_color,
-										fontWeight = FontWeight.ExtraBold,
-										fontSize = TextUnit(14f, TextUnitType.Sp),
-									)
-								) {
-									append(item.imDbRating)
-								}
-								
-								withStyle(
-									SpanStyle(
-										color = text_color,
-										fontWeight = FontWeight.Light,
-										fontSize = TextUnit(12f, TextUnitType.Sp),
-									)
-								) {
-									append("/10")
-								}
-							},
-							modifier = Modifier.align(Alignment.CenterHorizontally)
+					
+					Row(
+						modifier = Modifier
+							.weight(0.8f)
+							.wrapContentWidth(Alignment.End),
+						verticalAlignment = Alignment.CenterVertically
+					) {
+						Image(
+							painter = painterResource(id = R.drawable.ic_star_24),
+							contentDescription = null,
+							modifier = Modifier.size(28.dp)
+						)
+						Column {
+							Text(
+								text = buildAnnotatedString {
+									withStyle(
+										SpanStyle(
+											color = text_color,
+											fontWeight = FontWeight.ExtraBold,
+											fontSize = TextUnit(14f, TextUnitType.Sp),
+										)
+									) {
+										append(item.imDbRating)
+									}
+									
+									withStyle(
+										SpanStyle(
+											color = text_color,
+											fontWeight = FontWeight.Light,
+											fontSize = TextUnit(12f, TextUnitType.Sp),
+										)
+									) {
+										append("/10")
+									}
+								},
+								modifier = Modifier.align(Alignment.CenterHorizontally)
+							)
+							
+							Text(
+								text = run {
+									val format = DecimalFormat("###,###.##")
+									val vote = if (item.imDbRatingCount.isBlank()) "0"
+									else format.format(item.imDbRatingCount.toLong()).replace(',', '.')
+									
+									vote
+								},
+								color = text_color,
+								fontWeight = FontWeight.Normal,
+								fontSize = TextUnit(12f, TextUnitType.Sp),
+								modifier = Modifier
+									.align(Alignment.CenterHorizontally)
+							)
+						}
+					}
+				}
+				
+				// Rank Row
+				Row(
+					verticalAlignment = Alignment.CenterVertically,
+					modifier = Modifier
+						.fillMaxWidth()
+						.padding(top = 8.dp, start = 8.dp, end = 8.dp, bottom = 8.dp)
+				) {
+					Row(
+						verticalAlignment = Alignment.CenterVertically,
+						modifier = Modifier
+							.weight(0.5f)
+							.wrapContentWidth(Alignment.Start)
+					) {
+						Icon(
+							imageVector = Icons.Filled.ArrowDropDown,
+							tint = if (item.rankUpDown.contains("\\+".toRegex())) malachite else coral_red,
+							contentDescription = null,
+							modifier = Modifier.rotate(
+								if (item.rankUpDown.contains("\\+".toRegex())) 180f
+								else 0f
+							)
 						)
 						
 						Text(
-							text = item.imDbRatingCount,
-							color = text_color,
-							fontWeight = FontWeight.Normal,
-							fontSize = TextUnit(12f, TextUnitType.Sp),
+							text = item.rankUpDown,
+							fontSize = TextUnit(14f, TextUnitType.Sp),
+							fontWeight = FontWeight.Light,
+							modifier = Modifier
+								.padding(start = 2.dp)
+						)
+					}
+					
+					Row(
+						verticalAlignment = Alignment.CenterVertically,
+						modifier = Modifier
+							.weight(0.5f)
+							.wrapContentWidth(Alignment.End)
+					) {
+						Image(
+							painter = painterResource(id = R.drawable.ic_ranking),
+							contentDescription = null,
+							modifier = Modifier.size(28.dp)
+						)
+						
+						Text(
+							text = item.rank,
+							fontSize = TextUnit(14f, TextUnitType.Sp),
+							fontWeight = FontWeight.Light,
+							modifier = Modifier
+								.padding(start = 8.dp)
 						)
 					}
 				}
@@ -289,7 +269,7 @@ fun MostPopularMovieItem(
 	}
 }
 
-@Preview(showSystemUi = true)
+@Preview
 @Composable
 fun MostPopularMovieItemPreview() {
 	val navHostController = rememberNavController()
@@ -396,7 +376,7 @@ fun SimilarItem(
 		elevation = 4.dp,
 		onClick = {
 			if (similar != null) {
-				viewModel.getMovie(similar.id, true)
+				viewModel.getMovie(similar.id)
 			}
 		},
 		modifier = Modifier
@@ -436,8 +416,9 @@ fun SimilarItem(
 			
 			if (similar != null) {
 				Text(
-					text = similar.fullTitle,
+					text = if (similar.fullTitle.isNotBlank()) similar.fullTitle else similar.title,
 					color = black,
+					overflow = TextOverflow.Ellipsis,
 					maxLines = 1,
 					fontSize = TextUnit(14f, TextUnitType.Sp),
 					fontWeight = FontWeight.SemiBold,
@@ -493,7 +474,7 @@ fun PosterItem(poster: Poster) {
 				listener(object : ImageRequest.Listener {
 					override fun onError(request: ImageRequest, throwable: Throwable) {
 						super.onError(request, throwable)
-						i("ImageRequest", throwable.message!!)
+						Timber.i(throwable.message!!)
 						throwable.printStackTrace()
 					}
 					

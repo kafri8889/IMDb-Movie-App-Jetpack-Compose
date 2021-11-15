@@ -3,15 +3,23 @@ package com.anafthdev.imdbmovie.ui.activity
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -19,6 +27,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.*
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.anafthdev.imdbmovie.BuildConfig
 import com.anafthdev.imdbmovie.R
@@ -51,6 +60,13 @@ class MainActivity : ComponentActivity() {
 				super.log(priority, "DEBUG_$tag", message, t)
 			}
 		})
+		
+		databaseUtils.getAllMovies { movies ->
+			movies.forEach {
+				databaseUtils.deleteMovie(it, 1)
+			}
+		}
+		
 		setContent {
 			IMDbMovieTheme {
 				MainActivityScreen()
@@ -58,15 +74,17 @@ class MainActivity : ComponentActivity() {
 		}
 	}
 	
+	@OptIn(ExperimentalAnimationApi::class)
 	@Composable
 	fun MainActivityScreen() {
 		val scope = rememberCoroutineScope()
 		val scaffoldState = rememberScaffoldState(rememberDrawerState(initialValue = DrawerValue.Closed))
 		val navController = rememberNavController()
+		val density = LocalDensity.current
+		var showNavRail by remember { mutableStateOf(false) }
 		
 		Scaffold(
 			scaffoldState = scaffoldState,
-			drawerBackgroundColor = Color.White,
 			topBar = {
 				TopAppBar(
 					backgroundColor = default_primary,
@@ -77,7 +95,7 @@ class MainActivity : ComponentActivity() {
 						IconButton(
 							onClick = {
 								scope.launch {
-									scaffoldState.drawerState.open()
+									showNavRail = !showNavRail
 								}
 							}
 						) {
@@ -90,88 +108,104 @@ class MainActivity : ComponentActivity() {
 					}
 				)
 			},
-			drawerContent = {
-				Drawer(scope = scope, scaffoldState = scaffoldState, navHostController = navController)
-			}
 		) {
-			NavHost(
-				navController = navController,
-				startDestination = NavigationDestination.MOST_POPULAR_MOVIE_SCREEN
-			) {
-				composable(
-					route = "${NavigationDestination.MOVIE_INFORMATION_SCREEN}/{movieID}",
-					arguments = listOf(
-						navArgument("movieID") {
-							type = NavType.StringType
-						}
-					)
-				) { entry ->
-					val movieID = entry.arguments?.getString("movieID")
-					MovieInformationScreen(
-						navigationController = navController,
-						viewModel = viewModel,
-						movieID = movieID ?: ""
-					)
+			Box {
+				val navigationBackStackEntry by navController.currentBackStackEntryAsState()
+				val currentRoute = navigationBackStackEntry?.destination?.route
+				NavHost(
+					navController = navController,
+					startDestination = NavigationDestination.MOST_POPULAR_MOVIE_SCREEN
+				) {
+					composable(
+						route = "${NavigationDestination.MOVIE_INFORMATION_SCREEN}/{movieID}",
+						arguments = listOf(
+							navArgument("movieID") {
+								type = NavType.StringType
+							}
+						)
+					) { entry ->
+						val movieID = entry.arguments?.getString("movieID")
+						MovieInformationScreen(
+							navigationController = navController,
+							viewModel = viewModel,
+							movieID = movieID ?: ""
+						)
+					}
+					
+					composable(NavigationDestination.MOST_POPULAR_MOVIE_SCREEN) {
+						MostPopularMovieScreen(
+							navController,
+							viewModel
+						)
+					}
+					
+					composable(NavigationDestination.BOX_OFFICE_MOVIE_SCREEN) {
+						BoxOfficeMovieScreen(
+							navController
+						)
+					}
+					
+					composable(NavigationDestination.TOP_250_MOVIE_SCREEN) {
+						Top250MovieScreen(
+							navController
+						)
+					}
+					
+					composable(NavigationDestination.SETTINGS_SCREEN) {
+						SettingsScreen(appDatastore, scope)
+					}
 				}
 				
-				composable(NavigationDestination.MOST_POPULAR_MOVIE_SCREEN) {
-					MostPopularMovieScreen(
-						navController,
-						viewModel
+				AnimatedVisibility(
+					visible = showNavRail,
+					enter = slideInHorizontally(
+						initialOffsetX = { with(density) { -40.dp.roundToPx() } }
 					)
-				}
-				
-				composable(NavigationDestination.BOX_OFFICE_MOVIE_SCREEN) {
-					BoxOfficeMovieScreen(
-						navController
-					)
-				}
-				
-				composable(NavigationDestination.TOP_250_MOVIE_SCREEN) {
-					Top250MovieScreen(
-						navController
-					)
-				}
-				
-				composable(NavigationDestination.SETTINGS_SCREEN) {
-					SettingsScreen(appDatastore, scope)
-				}
-			}
-		}
-	}
-	
-	@Preview(showBackground = true)
-	@Composable
-	fun MainActivityScreenPreview() {
-		val scope = rememberCoroutineScope()
-		val scaffoldState = rememberScaffoldState(rememberDrawerState(initialValue = DrawerValue.Closed))
-		val navController = rememberNavController()
-		Scaffold(
-			drawerBackgroundColor = default_primary,
-			topBar = {
-				TopAppBar(
-					backgroundColor = default_primary,
-					contentColor = Color.White,
-					elevation = 8.dp,
-					title = { Text(text = stringResource(id = R.string.app_name)) },
-					navigationIcon = {
-						IconButton(
-							onClick = {}
-						) {
-							Image(
-								imageVector = Icons.Filled.Menu,
-								colorFilter = ColorFilter.tint(Color.White, BlendMode.SrcAtop),
-								contentDescription = null
-							)
+				) {
+					Column(
+						modifier = Modifier
+							.fillMaxSize()
+							.clickable(
+								// Remove ripple effect
+								indication = null,
+								interactionSource = remember { MutableInteractionSource() }
+							) {
+								showNavRail = false
+							}
+					) {
+						NavigationRail {
+							NavigationDrawerItem.items.forEach {
+								NavigationRailItem(
+									icon = {
+										Icon(
+											painter = painterResource(id = it.icon ?: R.drawable.ic_dot),
+											contentDescription = null,
+											modifier = Modifier
+												.size(16.dp)
+										)
+									},
+									label = { Text(it.title) },
+									selected = currentRoute == it.destination,
+									onClick = {
+										navController.navigate(it.destination) {
+											navController.graph.startDestinationRoute?.let { destination ->
+												popUpTo(destination) {
+													saveState = true
+												}
+												
+												launchSingleTop = true
+												restoreState = true
+											}
+										}
+										
+										scope.launch { scaffoldState.drawerState.close() }
+									}
+								)
+							}
 						}
 					}
-				)
-			},
-			drawerContent = {
-				Drawer(scope = scope, scaffoldState = scaffoldState, navHostController = navController)
+				}
 			}
-		) {
-		
 		}
 	}
 }
