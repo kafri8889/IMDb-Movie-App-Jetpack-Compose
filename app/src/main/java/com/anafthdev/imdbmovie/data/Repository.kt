@@ -5,37 +5,27 @@ class Repository(
 	private val remoteDataSource: RemoteDataSource
 	) {
 	
-	fun getMovie(callback: OperationCallback<Any>, apiKey: String, movieType: MovieType, connectedToInternet: Boolean) {
-		if (connectedToInternet) when (movieType) {
-			MovieType.MOST_POPULAR_MOVIE -> {
-				localDataSource.databaseUtils.getAllMostPopularMovie {
-					if (it.isEmpty()) remoteDataSource.getMovie(apiKey, movieType, callback)
+	fun getMovie(callback: OperationCallback<Any>, apiKey: String, movieType: MovieType, connectedToInternet: Boolean, id: String = "") {
+		if (connectedToInternet) {
+			if (movieType == MovieType.MOVIE_INFORMATION) {
+				localDataSource.isEmpty(MovieType.MOVIE_INFORMATION, id) { exists ->
+					// if exists, get movie from localDB, else get from API
+					if (exists) localDataSource.getMovie(MovieType.MOVIE_INFORMATION, callback, id)
+					else remoteDataSource.getMovie(apiKey, movieType, callback, id)
+				}
+			} else {
+				localDataSource.isEmpty(movieType) { empty ->
+					if (empty) remoteDataSource.getMovie(apiKey, movieType, callback)
 					else localDataSource.getMovie(movieType, callback)
 				}
 			}
-			MovieType.TOP_250_MOVIE -> {}
-			MovieType.BOX_OFFICE_MOVIE -> {}
-			MovieType.MOVIE_INFORMATION -> {}
+		} else {
+			if (movieType == MovieType.MOVIE_INFORMATION) localDataSource.getMovie(movieType, callback, id)
+			else localDataSource.getMovie(movieType, callback)
 		}
-		else localDataSource.getMovie(movieType, callback)
 	}
 	
-	fun getMovie(
-		id: String,
-		apiKey: String,
-		connectedToInternet: Boolean,
-		callback: OperationCallback<Any>
-	) {
-		if (connectedToInternet) localDataSource.checkMovie(id) { exists ->
-			// if exists, get movie from localDB, else get from API
-			if (exists) { localDataSource.getMovie(MovieType.MOVIE_INFORMATION, callback, id) }
-			else remoteDataSource.getMovie(id, apiKey, callback)
-		} else localDataSource.getMovie(MovieType.MOVIE_INFORMATION, callback, id)
-	}
-	
-	fun refreshMovie(callback: OperationCallback<Any>, apiKey: String, movieType: MovieType) {
+	fun fetchMovie(callback: OperationCallback<Any>, apiKey: String, movieType: MovieType) {
 		remoteDataSource.getMovie(apiKey, movieType, callback)
 	}
-	
-	fun cancelRemote() = remoteDataSource.cancel()
 }

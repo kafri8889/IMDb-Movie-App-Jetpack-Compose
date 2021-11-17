@@ -3,9 +3,9 @@ package com.anafthdev.imdbmovie.model.movie
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.anafthdev.imdbmovie.utils.DatabaseUtils
 import com.google.gson.annotations.SerializedName
 import java.io.Serializable
-import com.anafthdev.imdbmovie.utils.DatabaseUtils
 
 @Entity(tableName = "movie_table")
 data class Movie(

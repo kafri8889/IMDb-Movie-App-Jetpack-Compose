@@ -4,6 +4,8 @@
     <color name="default_dark_primary">#556743</color>
     <color name="default_secondary">#D8FABA</color>
 
+    <color name="ic_launcher_background">#9afb9f</color>
+
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="picton_blue">#33B5E5</color>

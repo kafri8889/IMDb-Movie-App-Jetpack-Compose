@@ -1,15 +1,19 @@
 package com.anafthdev.imdbmovie.ui.activity
 
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
@@ -18,24 +22,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.lifecycleScope
-import androidx.navigation.*
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.anafthdev.imdbmovie.BuildConfig
 import com.anafthdev.imdbmovie.R
 import com.anafthdev.imdbmovie.data.NavigationDestination
 import com.anafthdev.imdbmovie.data.NavigationDrawerItem
 import com.anafthdev.imdbmovie.injection.Application
-import com.anafthdev.imdbmovie.model.most_popular_movie.MostPopularMovie
-import com.anafthdev.imdbmovie.model.movie.Movie
 import com.anafthdev.imdbmovie.ui.*
 import com.anafthdev.imdbmovie.ui.theme.IMDbMovieTheme
 import com.anafthdev.imdbmovie.ui.theme.default_primary
@@ -141,13 +143,15 @@ class MainActivity : ComponentActivity() {
 					
 					composable(NavigationDestination.BOX_OFFICE_MOVIE_SCREEN) {
 						BoxOfficeMovieScreen(
-							navController
+							navController,
+							viewModel
 						)
 					}
 					
 					composable(NavigationDestination.TOP_250_MOVIE_SCREEN) {
 						Top250MovieScreen(
-							navController
+							navController,
+							viewModel
 						)
 					}
 					
@@ -165,13 +169,20 @@ class MainActivity : ComponentActivity() {
 					Column(
 						modifier = Modifier
 							.fillMaxSize()
-							.clickable(
-								// Remove ripple effect
-								indication = null,
-								interactionSource = remember { MutableInteractionSource() }
-							) {
-								showNavRail = false
+							.pointerInput(Unit) {
+								detectTapGestures {
+									runOnUiThread {
+										showNavRail = false
+									}
+								}
 							}
+//							.clickable(
+//								// Remove ripple effect
+//								indication = null,
+//								interactionSource = remember { MutableInteractionSource() }
+//							) {
+//								showNavRail = false
+//							}
 					) {
 						NavigationRail {
 							NavigationDrawerItem.items.forEach {
@@ -187,18 +198,19 @@ class MainActivity : ComponentActivity() {
 									label = { Text(it.title) },
 									selected = currentRoute == it.destination,
 									onClick = {
-										navController.navigate(it.destination) {
-											navController.graph.startDestinationRoute?.let { destination ->
-												popUpTo(destination) {
-													saveState = true
+										showNavRail = false
+										Handler(Looper.getMainLooper()).postDelayed({
+											navController.navigate(it.destination) {
+												navController.graph.startDestinationRoute?.let { destination ->
+													popUpTo(destination) {
+														saveState = true
+													}
+													
+													launchSingleTop = true
+													restoreState = true
 												}
-												
-												launchSingleTop = true
-												restoreState = true
 											}
-										}
-										
-										scope.launch { scaffoldState.drawerState.close() }
+										}, 300)
 									}
 								)
 							}

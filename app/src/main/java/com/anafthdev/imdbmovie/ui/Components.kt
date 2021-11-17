@@ -1,30 +1,22 @@
 package com.anafthdev.imdbmovie.ui
 
 import android.app.Application
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import android.util.Log.i
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.ArrowForward
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -38,9 +30,7 @@ import androidx.compose.ui.unit.ExperimentalUnitApi
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberImagePainter
 import coil.request.ImageRequest
@@ -48,8 +38,10 @@ import coil.request.ImageResult
 import com.anafthdev.imdbmovie.R
 import com.anafthdev.imdbmovie.data.*
 import com.anafthdev.imdbmovie.model.SettingsPreferences
+import com.anafthdev.imdbmovie.model.box_office_movie.BoxOfficeMovie
 import com.anafthdev.imdbmovie.model.most_popular_movie.MostPopularMovie
 import com.anafthdev.imdbmovie.model.movie.*
+import com.anafthdev.imdbmovie.model.top_250_movie.Top250Movie
 import com.anafthdev.imdbmovie.ui.theme.*
 import com.anafthdev.imdbmovie.utils.AppDatastore
 import com.anafthdev.imdbmovie.utils.AppUtils.get
@@ -57,10 +49,7 @@ import com.anafthdev.imdbmovie.utils.DatabaseUtils
 import com.anafthdev.imdbmovie.utils.NetworkUtil
 import com.anafthdev.imdbmovie.view_model.MovieViewModel
 import com.anafthdev.notepadcompose.utils.ComposeUtils
-import com.anafthdev.notepadcompose.utils.ComposeUtils.BounceEffect.applyBounce
 import com.anafthdev.notepadcompose.utils.ComposeUtils.Shimmer.applyShimmer
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.text.DecimalFormat
 
@@ -71,10 +60,11 @@ fun MostPopularMovieItem(
 	navHostController: NavHostController,
 	isNetworkAvailable: Boolean
 ) {
+	var shimmerState by remember { mutableStateOf(ComposeUtils.Shimmer.START) }
 	
 	Card(
 		shape = RoundedCornerShape(14.dp),
-		elevation = 3.dp,
+		elevation = 4.dp,
 		modifier = Modifier
 			.focusable(true)
 			.fillMaxWidth()
@@ -97,7 +87,6 @@ fun MostPopularMovieItem(
 		}
 	) {
 		Column {
-			var shimmerState by remember { mutableStateOf(ComposeUtils.Shimmer.START) }
 			Image(
 				contentDescription = null,
 				contentScale = ContentScale.Crop,
@@ -243,6 +232,7 @@ fun MostPopularMovieItem(
 						)
 					}
 					
+					// Rank
 					Row(
 						verticalAlignment = Alignment.CenterVertically,
 						modifier = Modifier
@@ -279,6 +269,353 @@ fun MostPopularMovieItemPreview() {
 		isNetworkAvailable = false
 	)
 }
+
+
+
+
+
+@OptIn(ExperimentalMaterialApi::class, ExperimentalUnitApi::class)
+@Composable
+fun BoxOfficeMovieItem(
+	item: BoxOfficeMovie,
+	navHostController: NavHostController,
+	isNetworkAvailable: Boolean
+) {
+	var shimmerState by remember { mutableStateOf(ComposeUtils.Shimmer.START) }
+	
+	Card(
+		shape = RoundedCornerShape(14.dp),
+		elevation = 4.dp,
+		modifier = Modifier
+			.focusable(true)
+			.fillMaxWidth()
+			.wrapContentHeight()
+			.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
+		onClick = {
+			val destination = NavigationDestination.MOVIE_INFORMATION_SCREEN
+			navHostController.navigate(
+				"$destination/${item.id}"
+			) {
+				navHostController.graph.startDestinationRoute?.let { destination ->
+					popUpTo(destination) {
+						saveState = true
+					}
+					
+					launchSingleTop = true
+					restoreState = true
+				}
+			}
+		}
+	) {
+		Column {
+			Image(
+				contentDescription = null,
+				contentScale = ContentScale.Crop,
+				painter = rememberImagePainter(
+					data = item.image,
+					builder = {
+						if (isNetworkAvailable) data(item.image)
+						listener(object : ImageRequest.Listener {
+							override fun onError(request: ImageRequest, throwable: Throwable) {
+								super.onError(request, throwable)
+								throwable.printStackTrace()
+								Log.e("ImageRequest", "error: ${throwable.message}")
+							}
+							
+							override fun onStart(request: ImageRequest) {
+								super.onStart(request)
+								shimmerState = ComposeUtils.Shimmer.START
+							}
+							
+							override fun onSuccess(request: ImageRequest, metadata: ImageResult.Metadata) {
+								super.onSuccess(request, metadata)
+								shimmerState = ComposeUtils.Shimmer.STOP
+							}
+						})
+					}
+				),
+				modifier = Modifier
+					.height(512.dp)
+					.fillMaxWidth()
+					.clip(
+						RoundedCornerShape(
+							topEnd = 14.dp,
+							topStart = 14.dp
+						)
+					)
+					.applyShimmer(shimmerState)
+			)
+			
+			Row(
+				modifier = Modifier
+					.fillMaxWidth()
+					.wrapContentHeight()
+					.padding(8.dp)
+			) {
+				// Title and Week
+				Column(
+					modifier = Modifier
+						.weight(2f)
+				) {
+					Text(
+						text = item.title,
+						fontWeight = FontWeight.Bold,
+						fontSize = TextUnit(16f, TextUnitType.Sp),
+						maxLines = 1,
+						overflow = TextOverflow.Ellipsis,
+						modifier = Modifier
+							.fillMaxWidth()
+							.wrapContentHeight()
+					)
+					
+					Text(
+						text = "Week: ${item.weeks}",
+						fontWeight = FontWeight.Normal,
+						fontSize = TextUnit(12f, TextUnitType.Sp),
+						maxLines = 1,
+						overflow = TextOverflow.Ellipsis,
+						modifier = Modifier
+							.padding(top = 4.dp)
+							.fillMaxWidth()
+							.wrapContentHeight()
+					)
+				}
+				
+				// Rank
+				Row(
+					verticalAlignment = Alignment.CenterVertically,
+					modifier = Modifier
+						.weight(0.4f)
+						.wrapContentWidth(Alignment.End)
+						.align(Alignment.CenterVertically)
+				) {
+					Image(
+						painter = painterResource(id = R.drawable.ic_ranking),
+						contentDescription = null,
+						modifier = Modifier.size(28.dp)
+					)
+					
+					Text(
+						text = item.rank,
+						fontSize = TextUnit(14f, TextUnitType.Sp),
+						fontWeight = FontWeight.Light,
+						modifier = Modifier
+							.padding(start = 8.dp)
+					)
+				}
+			}
+		}
+	}
+}
+
+@Preview
+@Composable
+fun BoxOfficeMovieItemPreview() {
+	val navHostController = rememberNavController()
+	BoxOfficeMovieItem(
+		item = BoxOfficeMovie.item1,
+		navHostController = navHostController,
+		isNetworkAvailable = false
+	)
+}
+
+
+
+
+
+@OptIn(ExperimentalMaterialApi::class, ExperimentalUnitApi::class)
+@Composable
+fun Top250MovieItem(
+	item: Top250Movie,
+	navHostController: NavHostController,
+	isNetworkAvailable: Boolean
+) {
+	var shimmerState by remember { mutableStateOf(ComposeUtils.Shimmer.START) }
+	
+	Card(
+		shape = RoundedCornerShape(14.dp),
+		elevation = 4.dp,
+		modifier = Modifier
+			.fillMaxWidth()
+			.wrapContentHeight()
+			.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
+		onClick = {
+			val destination = NavigationDestination.MOVIE_INFORMATION_SCREEN
+			navHostController.navigate(
+				"$destination/${item.id}"
+			) {
+				navHostController.graph.startDestinationRoute?.let { destination ->
+					popUpTo(destination) {
+						saveState = true
+					}
+					
+					launchSingleTop = true
+					restoreState = true
+				}
+			}
+		}
+	) {
+		Column(
+			modifier = Modifier
+				.fillMaxWidth()
+				.wrapContentHeight()
+		) {
+			Image(
+				contentDescription = null,
+				contentScale = ContentScale.Crop,
+				painter = rememberImagePainter(
+					data = item.image,
+					builder = {
+						if (isNetworkAvailable) data(item.image)
+						listener(object : ImageRequest.Listener {
+							override fun onError(request: ImageRequest, throwable: Throwable) {
+								super.onError(request, throwable)
+								throwable.printStackTrace()
+								Log.e("ImageRequest", "error: ${throwable.message}")
+							}
+							
+							override fun onStart(request: ImageRequest) {
+								super.onStart(request)
+								shimmerState = ComposeUtils.Shimmer.START
+							}
+							
+							override fun onSuccess(request: ImageRequest, metadata: ImageResult.Metadata) {
+								super.onSuccess(request, metadata)
+								shimmerState = ComposeUtils.Shimmer.STOP
+							}
+						})
+					}
+				),
+				modifier = Modifier
+					.height(512.dp)
+					.fillMaxWidth()
+					.clip(
+						RoundedCornerShape(
+							topEnd = 14.dp,
+							topStart = 14.dp
+						)
+					)
+					.applyShimmer(shimmerState)
+			)
+			
+			Row(
+				verticalAlignment = Alignment.CenterVertically,
+				modifier = Modifier
+					.fillMaxWidth()
+					.padding(8.dp)
+			) {
+				Text(
+					text = item.title,
+					fontWeight = FontWeight.Bold,
+					fontSize = TextUnit(16f, TextUnitType.Sp),
+					maxLines = 1,
+					overflow = TextOverflow.Ellipsis,
+					modifier = Modifier
+						.padding(end = 8.dp)
+						.weight(2f)
+						.wrapContentHeight()
+						.wrapContentWidth(Alignment.Start)
+				)
+				
+				Column(
+					horizontalAlignment = Alignment.CenterHorizontally,
+					modifier = Modifier
+						.weight(1f)
+						.wrapContentWidth(Alignment.End)
+				) {
+					
+					// Rating Row
+					Row(
+						verticalAlignment = Alignment.CenterVertically
+					) {
+						Image(
+							painter = painterResource(id = R.drawable.ic_star_24),
+							contentDescription = null,
+							modifier = Modifier.size(28.dp)
+						)
+						Column {
+							Text(
+								text = buildAnnotatedString {
+									withStyle(
+										SpanStyle(
+											color = text_color,
+											fontWeight = FontWeight.ExtraBold,
+											fontSize = TextUnit(14f, TextUnitType.Sp),
+										)
+									) {
+										append(item.imDbRating)
+									}
+									
+									withStyle(
+										SpanStyle(
+											color = text_color,
+											fontWeight = FontWeight.Light,
+											fontSize = TextUnit(12f, TextUnitType.Sp),
+										)
+									) {
+										append("/10")
+									}
+								},
+								modifier = Modifier.align(Alignment.CenterHorizontally)
+							)
+							
+							Text(
+								text = run {
+									val format = DecimalFormat("###,###.##")
+									val vote = if (item.imDbRatingCount.isBlank()) "0"
+									else format.format(item.imDbRatingCount.toLong()).replace(',', '.')
+									
+									vote
+								},
+								color = text_color,
+								fontWeight = FontWeight.Normal,
+								fontSize = TextUnit(12f, TextUnitType.Sp),
+								modifier = Modifier
+									.align(Alignment.CenterHorizontally)
+							)
+						}
+					}
+					
+					// Rank
+					Row(
+						verticalAlignment = Alignment.CenterVertically,
+						modifier = Modifier
+							.padding(top = 8.dp)
+					) {
+						Image(
+							painter = painterResource(id = R.drawable.ic_ranking),
+							contentDescription = null,
+							modifier = Modifier.size(28.dp)
+						)
+						
+						Text(
+							text = item.rank,
+							fontSize = TextUnit(14f, TextUnitType.Sp),
+							fontWeight = FontWeight.Light,
+							modifier = Modifier
+								.padding(start = 8.dp)
+						)
+					}
+				}
+			}
+		}
+	}
+}
+
+@Preview(showSystemUi = false)
+@Composable
+fun Top250MovieItemPreview() {
+	val navHostController = rememberNavController()
+	Top250MovieItem(
+		item = Top250Movie.item1,
+		navHostController = navHostController,
+		isNetworkAvailable = false
+	)
+}
+
+
+
+
 
 @OptIn(ExperimentalUnitApi::class)
 @Composable
@@ -357,6 +694,10 @@ fun ActorItemPreview() {
 	ActorItem(actor = actor)
 }
 
+
+
+
+
 @OptIn(
 	ExperimentalUnitApi::class,
 	ExperimentalMaterialApi::class,
@@ -376,7 +717,10 @@ fun SimilarItem(
 		elevation = 4.dp,
 		onClick = {
 			if (similar != null) {
-				viewModel.getMovie(similar.id)
+				viewModel.get(
+					MovieType.MOVIE_INFORMATION,
+					similar.id
+				)
 			}
 		},
 		modifier = Modifier
@@ -463,6 +807,10 @@ fun SimilarItemPreview() {
 	)
 }
 
+
+
+
+
 @Composable
 fun PosterItem(poster: Poster) {
 	var shimmerState by remember { mutableStateOf(ComposeUtils.Shimmer.START) }
@@ -498,11 +846,9 @@ fun PosterItem(poster: Poster) {
 	)
 }
 
-@Preview(showBackground = false)
-@Composable
-fun PosterItemPreview() {
-	PosterItem(poster = Movie.item1.posters!!.posters[0])
-}
+
+
+
 
 @Composable
 fun BackdropItem(backdrop: Backdrop) {
@@ -538,6 +884,10 @@ fun BackdropItem(backdrop: Backdrop) {
 			.applyShimmer(shimmerState)
 	)
 }
+
+
+
+
 
 @OptIn(ExperimentalUnitApi::class)
 @Composable

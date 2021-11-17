@@ -8,11 +8,28 @@ import com.anafthdev.imdbmovie.utils.DatabaseUtils
 
 class LocalDataSource(val databaseUtils: DatabaseUtils) {
 	
-	fun getMovie(
-		movieType: MovieType,
-		callback: OperationCallback<Any>,
-		id: String = ""
-	) {
+	fun isEmpty(type: MovieType, id: String = "", action: (Boolean) -> Unit) {
+		when (type) {
+			MovieType.MOST_POPULAR_MOVIE -> {
+				databaseUtils.getAllMostPopularMovie { action(it.isEmpty()) }
+			}
+			MovieType.TOP_250_MOVIE -> {
+				databaseUtils.getAllTop250Movie { action(it.isEmpty()) }
+			}
+			MovieType.BOX_OFFICE_MOVIE -> {
+				databaseUtils.getAllBoxOfficeMovie { action(it.isEmpty()) }
+			}
+			MovieType.MOVIE_INFORMATION -> {
+				databaseUtils.getAllMovies { list ->
+					val movie = list.get { it.id == id }
+					if (movie != null) action(true)
+					else action(false)
+				}
+			}
+		}
+	}
+	
+	fun getMovie(movieType: MovieType, callback: OperationCallback<Any>, id: String = "") {
 		when (movieType) {
 			MovieType.MOST_POPULAR_MOVIE -> {
 				databaseUtils.getAllMostPopularMovie {
@@ -37,10 +54,6 @@ class LocalDataSource(val databaseUtils: DatabaseUtils) {
 				}
 			}
 		}
-	}
-	
-	fun checkMovie(id: String, action: (Boolean) -> Unit) {
-		databaseUtils.isMovieExists(id, action)
 	}
 	
 	companion object {

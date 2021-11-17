@@ -1,13 +1,7 @@
 package com.anafthdev.imdbmovie.utils
 
-import android.app.Activity
 import android.content.Context
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
 import android.os.Build
-import android.util.DisplayMetrics
-import android.util.Log
-import android.view.WindowInsets
 import android.widget.Toast
 import org.joda.time.DateTime
 import org.joda.time.LocalDate

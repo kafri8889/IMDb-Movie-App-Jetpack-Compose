@@ -50,7 +50,6 @@ import com.anafthdev.imdbmovie.ui.theme.black
 import com.anafthdev.imdbmovie.ui.theme.text_color
 import com.anafthdev.imdbmovie.utils.AppDatastore
 import com.anafthdev.imdbmovie.utils.AppUtils.get
-import com.anafthdev.imdbmovie.utils.AppUtils.toast
 import com.anafthdev.imdbmovie.utils.DatabaseUtils
 import com.anafthdev.imdbmovie.utils.NetworkUtil
 import com.anafthdev.imdbmovie.view_model.MovieViewModel
@@ -75,8 +74,6 @@ fun MostPopularMovieScreen(
 	navigationController: NavHostController,
 	movieViewModel: MovieViewModel
 ) {
-	val context = LocalContext.current
-	
 	// prevent for multiple api call
 	var hasAlreadyNavigate by remember { mutableStateOf(false) }
 	
@@ -86,7 +83,7 @@ fun MostPopularMovieScreen(
 	// works to reload photos in [MostPopularMovieItem] if network is available
 	val isNetworkAvailable by movieViewModel.networkUtil.isNetworkAvailable.collectAsState()
 	
-	val testData by movieViewModel.mostPopularMovies.observeAsState()
+	val mostPopularMovies by movieViewModel.mostPopularMovies.observeAsState()
 	
 	if (!hasAlreadyNavigate) {
 		movieViewModel.get(
@@ -103,7 +100,7 @@ fun MostPopularMovieScreen(
 		}
 	) {
 		LazyColumn {
-			items(testData!!) {
+			items(mostPopularMovies!!) {
 				MostPopularMovieItem(
 					item = it,
 					navHostController = navigationController,
@@ -116,16 +113,86 @@ fun MostPopularMovieScreen(
 
 @Composable
 fun Top250MovieScreen(
-	navigationController: NavHostController
+	navigationController: NavHostController,
+	movieViewModel: MovieViewModel
 ) {
-
+	// prevent for multiple api call
+	var hasAlreadyNavigate by remember { mutableStateOf(false) }
+	
+	val isRefreshing by movieViewModel.isRefreshing.collectAsState()
+	
+	// observe whether the internet is available or not
+	// works to reload photos in [BoxOfficeMovieItem] if network is available
+	val isNetworkAvailable by movieViewModel.networkUtil.isNetworkAvailable.collectAsState()
+	
+	val top250Movies by movieViewModel.top250Movies.observeAsState()
+	
+	if (!hasAlreadyNavigate) {
+		movieViewModel.get(
+			MovieType.TOP_250_MOVIE
+		)
+		true.also { hasAlreadyNavigate = it }
+	}
+	
+	val swipeRefreshState = rememberSwipeRefreshState(isRefreshing = isRefreshing)
+	SwipeRefresh(
+		state = swipeRefreshState,
+		onRefresh = {
+			movieViewModel.refresh(MovieType.TOP_250_MOVIE)
+		}
+	) {
+		LazyColumn {
+			items(top250Movies!!) {
+				Top250MovieItem(
+					item = it,
+					navHostController = navigationController,
+					isNetworkAvailable = isNetworkAvailable
+				)
+			}
+		}
+	}
 }
 
 @Composable
 fun BoxOfficeMovieScreen(
-	navigationController: NavHostController
+	navigationController: NavHostController,
+	movieViewModel: MovieViewModel
 ) {
-
+	// prevent for multiple api call
+	var hasAlreadyNavigate by remember { mutableStateOf(false) }
+	
+	val isRefreshing by movieViewModel.isRefreshing.collectAsState()
+	
+	// observe whether the internet is available or not
+	// works to reload photos in [BoxOfficeMovieItem] if network is available
+	val isNetworkAvailable by movieViewModel.networkUtil.isNetworkAvailable.collectAsState()
+	
+	val boxOfficeMovies by movieViewModel.boxOfficeMovies.observeAsState()
+	
+	if (!hasAlreadyNavigate) {
+		movieViewModel.get(
+			MovieType.BOX_OFFICE_MOVIE
+		)
+		true.also { hasAlreadyNavigate = it }
+	}
+	
+	val swipeRefreshState = rememberSwipeRefreshState(isRefreshing = isRefreshing)
+	SwipeRefresh(
+		state = swipeRefreshState,
+		onRefresh = {
+			movieViewModel.refresh(MovieType.BOX_OFFICE_MOVIE)
+		}
+	) {
+		LazyColumn {
+			items(boxOfficeMovies!!) {
+				BoxOfficeMovieItem(
+					item = it,
+					navHostController = navigationController,
+					isNetworkAvailable = isNetworkAvailable
+				)
+			}
+		}
+	}
 }
 
 @OptIn(
@@ -159,7 +226,10 @@ fun MovieInformationScreen(
 	
 	// prevent for multiple api call
 	if (!isRequestExecute) {
-		viewModel.getMovie(movieID)
+		viewModel.get(
+			MovieType.MOVIE_INFORMATION,
+			movieID
+		)
 		true.also { isRequestExecute = it }
 	}
 	
@@ -311,6 +381,7 @@ fun MovieInformationScreen(
 					modifier = Modifier.padding(start = 14.dp, end = 8.dp, bottom = 8.dp)
 				) {
 					
+					
 					// Rating
 					Column(
 						modifier = Modifier.weight(2f),
@@ -331,7 +402,15 @@ fun MovieInformationScreen(
 										fontSize = TextUnit(12f, TextUnitType.Sp),
 									)
 								) {
-									append(movie.imDbRating ?: "0")
+									append(
+										run {
+											if (movie.imDbRating == null) "0"
+											else {
+												if (movie.imDbRating.isBlank()) "0"
+												else movie.imDbRating
+											}
+										}
+									)
 								}
 								
 								withStyle(
@@ -362,6 +441,7 @@ fun MovieInformationScreen(
 							fontSize = TextUnit(12f, TextUnitType.Sp),
 						)
 					}
+					
 					
 					// Meta score
 					Divider(
@@ -399,6 +479,7 @@ fun MovieInformationScreen(
 							fontSize = TextUnit(12f, TextUnitType.Sp),
 						)
 					}
+					
 					
 					// Awards
 					Divider(

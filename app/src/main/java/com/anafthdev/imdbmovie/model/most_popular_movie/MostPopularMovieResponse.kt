@@ -4,5 +4,5 @@ import com.google.gson.annotations.SerializedName
 
 data class MostPopularMovieResponse(
     @SerializedName("errorMessage") val errorMessage: String?,
-    @SerializedName("items") val mostPopularMovies: List<MostPopularMovie>
+    @SerializedName("items") val mostPopularMovies: List<MostPopularMovie>?
 )

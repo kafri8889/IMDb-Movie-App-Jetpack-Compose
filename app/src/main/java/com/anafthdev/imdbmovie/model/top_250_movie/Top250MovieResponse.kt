@@ -1,6 +1,8 @@
 package com.anafthdev.imdbmovie.model.top_250_movie
 
+import com.google.gson.annotations.SerializedName
+
 data class Top250MovieResponse(
-    val errorMessage: String,
-    val top250Movies: List<Top250Movie>
+    @SerializedName("errorMessage") val errorMessage: String?,
+    @SerializedName("items") val top250Movies: List<Top250Movie>?
 )
